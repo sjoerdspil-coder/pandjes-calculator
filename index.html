@@ -198,6 +198,13 @@
         <div class="ln" style="margin-top:10px"><span class="k">Netto cashflow p/jaar (nu)</span><span class="v" id="r_nettojr"></span></div>
       </div>
       <div class="card" style="border-color:var(--accent)">
+        <h3>Dealcheck — vanaf jaar 1 positief?</h3>
+        <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">Bij jouw rente, looptijd, huur en kosten: de hoogste koopsom waarbij je vanaf jaar 1 cashflow-positief bent. Per pand — vergelijk met de vraagprijs.</div>
+        <div class="stat big" id="be_stat" style="margin-bottom:10px"><div class="l">Maximale koopsom voor positief</div><div class="v" id="be_max">–</div></div>
+        <div class="ln"><span class="k">Jouw bod (per pand)</span><span class="v" id="be_bod"></span></div>
+        <div id="be_verdict"></div>
+      </div>
+      <div class="card" style="border-color:var(--accent)">
         <h3>Wat krijg jij als koper? (hele rit, nominaal)</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div class="stat big" id="b_result_stat"><div class="l">Onderaan de streep</div><div class="v" id="b_result">–</div></div>
@@ -392,6 +399,32 @@
     s("r_coc",isFinite(coc)?pct(coc):(inleg===0?"∞":"–"));
     s("r_bar",pct(bar));
     s("r_nettojr",eur(nettoJr));
+
+    function netM1(b){
+      var imX=rente/12, nmX=looptijd*12, mlast, aflx, jd;
+      if(vorm==="aflossingsvrij"){mlast=b*imX; aflx=0; jd=b*rente;}
+      else{mlast=(imX>0)? b*imX/(1-Math.pow(1+imX,-nmX)) : b/nmX; aflx=mlast-b*imX; jd=mlast*12;}
+      var rShareM=vergHuur? huurdeelPct*huurStart : 0;
+      var compx=vergHuur? rShareM : b*imX;
+      var pre=huurStart-(aflx+compx)-serviceM-onderhoudM-leegM;
+      var r1=(vorm==="aflossingsvrij")?((looptijd>1)?b:0):((imX>0)? b*Math.pow(1+imX,12)-mlast*((Math.pow(1+imX,12)-1)/imX) : b-(b/nmX)*12);
+      if(r1<0)r1=0;
+      var int1=(vorm==="aflossingsvrij")? b*rente : (jd-(b-r1));
+      var fc1=vergHuur? rShareM*12 : int1;
+      var w1=(huurStart*12*(1-leeg))-serviceM*12-onderhoud-fc1-afschrijving;
+      var vp=bvMode? Math.max(w1,0)*vpbRate : 0;
+      return pre-vp/12;
+    }
+    var maxBod;
+    if(netM1(0)<=0){maxBod=0;}
+    else{var lo=0,hi=1e8; for(var kb=0;kb<64;kb++){var mid=(lo+hi)/2; if(netM1(mid)>0)lo=mid; else hi=mid;} maxBod=lo;}
+    s("be_max",maxBod>0? eurRaw(maxBod):"geen prijs mogelijk");
+    s("be_bod",eurRaw(bod));
+    tone("be_stat",maxBod>0&&bod<=maxBod);
+    var bev=document.getElementById("be_verdict");
+    if(maxBod<=0){bev.innerHTML='<span class="badge" style="background:var(--badbg);color:var(--bad)">Bij deze huur/kosten kan geen enkele prijs vanaf jaar 1 positief zijn</span>';}
+    else if(bod<=maxBod){bev.innerHTML='<span class="badge" style="background:var(--goodbg);color:var(--good)">Past ✓ — marge tot '+eurRaw(maxBod-bod)+' onder de max</span>';}
+    else{bev.innerHTML='<span class="badge" style="background:var(--badbg);color:var(--bad)">Te duur — onderhandel naar ≤ '+eurRaw(maxBod)+'</span>';}
 
     s("o_deal",eur(nominaal)); s("o_norm",eur(norm)); s("o_nom",eur(nominaal));
     var vd=nominaal-norm, vp=norm>0?vd/norm*100:0;
