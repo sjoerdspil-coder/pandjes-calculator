@@ -62,8 +62,8 @@
   <p class="sub">Verkopersfinanciering zonder eigen inleg in de koopsom. Vul links de deal in, zie in het midden het overzicht en rechts de resultaten.</p>
 
   <div class="card" style="border-color:var(--accent);margin-bottom:16px">
-    <label style="font-weight:700;color:var(--ink);font-size:14px">Simulatie — totale aankoopwaarde: <span id="d_schaal_out" style="color:var(--accent)"></span> <span id="d_schaal_units" style="color:var(--muted);font-weight:400;font-size:12px"></span></label>
-    <div class="sl"><input type="range" id="d_schaal" min="10000" max="10000000" step="500" value="15500"></div>
+    <label style="font-weight:700;color:var(--ink);font-size:14px">Simulatie — totale aankoopwaarde (€) <span id="d_schaal_units" style="color:var(--muted);font-weight:400;font-size:12px"></span></label>
+    <div class="sl" style="gap:10px"><input type="range" id="d_schaal" min="10000" max="10000000" step="500" value="15500"><input type="number" id="d_schaal_num" value="15500" step="1000" style="width:150px;flex:none"></div>
     <div style="font-size:11px;color:var(--muted);margin-top:4px">Alle bedragen in de hele tool schalen lineair mee vanaf de basisdeal die je links invult. Percentages (rendement) blijven gelijk. Zet de schuif op de laagste stand voor de kleinste schaal.</div>
   </div>
 
@@ -166,6 +166,17 @@
           <table id="yeartable" style="width:100%;border-collapse:collapse;font-size:13px"></table>
         </div>
       </div>
+      <div class="card">
+        <h3>Maandcashflow per jaar (op schaal)</h3>
+        <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">Netto cashflow per maand op de gekozen totale aankoopwaarde (zie de schuif bovenaan).</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px">
+          <div class="stat big" id="t_cfm_stat"><div class="l">Netto cashflow p/maand (nu)</div><div class="v" id="t_cfm">–</div></div>
+          <div class="stat"><div class="l">Maandlast aan verkoper</div><div class="v" id="t_maandlast">–</div></div>
+        </div>
+        <div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px">
+          <table id="tontable" style="width:100%;border-collapse:collapse;font-size:13px"></table>
+        </div>
+      </div>
     </div>
 
     <!-- KOLOM 3: RESULTATEN -->
@@ -191,20 +202,9 @@
         <div class="ln minus"><span class="k">Eigen inleg (ovb + notaris)</span><span class="v" id="b_inleg"></span></div>
         <div class="ln minus" id="b_vpb_row" style="display:none"><span class="k">Vennootschapsbelasting (BV)</span><span class="v" id="b_vpb"></span></div>
         <div class="ln tot"><span class="k">Netto cashflow over de rit</span><span class="v" id="b_netto"></span></div>
-        <div class="ln plus"><span class="k">Pand in bezit, vrij van schuld (± koopsom)</span><span class="v" id="b_pand"></span></div>
+        <div class="ln plus"><span class="k">Pand in bezit, vrij van schuld (na waardestijging)</span><span class="v" id="b_pand"></span></div>
         <div class="ln tot"><span class="k">Wat jij overhoudt (in de BV)</span><span class="v" id="b_over"></span></div>
         <div class="ln" id="b_box2_row" style="display:none"><span class="k">Netto naar privé</span><span class="v" id="b_box2v"></span></div>
-      </div>
-      <div class="card">
-        <h3>Maandcashflow per jaar (op schaal)</h3>
-        <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">Netto cashflow per maand op de gekozen totale aankoopwaarde (zie de schuif bovenaan).</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px">
-          <div class="stat big" id="t_cfm_stat"><div class="l">Netto cashflow p/maand (nu)</div><div class="v" id="t_cfm">–</div></div>
-          <div class="stat"><div class="l">Maandlast aan verkoper</div><div class="v" id="t_maandlast">–</div></div>
-        </div>
-        <div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px">
-          <table id="tontable" style="width:100%;border-collapse:collapse;font-size:13px"></table>
-        </div>
       </div>
       <div class="card">
         <h3>Wat krijgt de verkoper?</h3>
@@ -218,13 +218,13 @@
         <div class="ln tot"><span class="k">Verschil contant vs. nu</span><span class="v" id="o_pvversch"></span></div>
         <div id="o_verdict"></div>
       </div>
-      <p class="foot">Indicatief, exclusief inkomsten-/box 3-belasting en waardestijging van het pand. Huur, servicekosten, onderhoud en leegstand stijgen mee met de jaarlijkse indexatie; rente, aflossing en sweetener staan vast — daardoor wordt de deal met de jaren steeds gunstiger voor jou. Aflossing bouwt eigen vermogen op. BV-modus: over de winst (huur minus kosten, aftrekbare rente en afschrijving) wordt vpb gerekend met verliesverrekening; aflossing is niet aftrekbaar. 'Netto naar privé' is een grove box 2-schatting bij volledige uitkering — de precieze fiscale behandeling (afschrijvingsbeperking, sweetener als kost of koopprijs, box 2-timing) hangt af van je situatie. Geen fiscaal of financieel advies — overleg met een accountant.</p>
+      <p class="foot">Indicatief, exclusief inkomsten-/box 3-belasting. Huur, servicekosten, onderhoud, leegstand én de pandwaarde stijgen mee met de jaarlijkse indexatie; rente, aflossing en sweetener staan vast — daardoor wordt de deal met de jaren steeds gunstiger voor jou. Let op: de meegerekende waardestijging is nog niet belast — bij verkoop betaal je in een BV vpb over de boekwinst en daarna box 2 bij uitkering. Aflossing bouwt eigen vermogen op. BV-modus: over de winst (huur minus kosten, aftrekbare rente en afschrijving) wordt vpb gerekend met verliesverrekening; aflossing is niet aftrekbaar. 'Netto naar privé' is een grove box 2-schatting bij volledige uitkering — de precieze fiscale behandeling (afschrijvingsbeperking, sweetener als kost of koopprijs, box 2-timing) hangt af van je situatie. Geen fiscaal of financieel advies — overleg met een accountant.</p>
     </div>
   </div>
 </div>
 <script>
 (function(){
-  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc","d_bv","d_houden","d_afschrijving","d_vpb","d_box2","d_schaal"];
+  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc","d_bv","d_houden","d_afschrijving","d_vpb","d_box2","d_schaal_num"];
   var KEY="pandjes_calc_v3";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function val(id){return document.getElementById(id).value;}
@@ -247,7 +247,7 @@
     var bvMode=document.getElementById("d_bv").checked;
     var houden=document.getElementById("d_houden").checked;
     var afschrijving=g("d_afschrijving"), vpbRate=g("d_vpb")/100, box2Rate=g("d_box2")/100;
-    var schaal=g("d_schaal"); S=(bod>0)?schaal/bod:1;
+    var schaal=g("d_schaal_num"); S=(bod>0)?schaal/bod:1;
 
     var ovbEur=bod*ovbP, inleg=ovbEur+notaris, totInvest=bod+ovbEur+notaris;
 
@@ -319,7 +319,7 @@
       var nYat=nY-vpb;
       cum+=nYat;
       if(vorm==="aflossingsvrij"&&yy===looptijd){cum-=bod;}
-      var netWorth=cum+(pandWaarde-restY);
+      var netWorth=cum+(bod*Math.pow(1+groei,yy)-restY);
       if(yy===H)cumAtH=cum;
       yearNet.push(nYat);
       if(yy<=H){huurTot+=rY; lastenTot+=sY+oY+lY; vpbTot+=vpb;}
@@ -337,7 +337,8 @@
     }
     document.getElementById("yeartable").innerHTML=th+tbody;
     var nettoRit=cumAtH;
-    var over=nettoRit+pandWaarde;
+    var pandWaardeH=bod*Math.pow(1+groei,H);
+    var over=nettoRit+pandWaardeH;
     var box2=(over>0)?over*box2Rate:0;
     var naBox2=over-box2;
 
@@ -387,7 +388,7 @@
     document.getElementById("b_vpb_row").style.display=bvMode?"":"none";
     if(bvMode)s("b_vpb","− "+eur(vpbTot));
     s("b_netto",(nettoRit>=0?"+ ":"− ")+eur(Math.abs(nettoRit)));
-    s("b_pand","+ "+eur(pandWaarde));
+    s("b_pand","+ "+eur(pandWaardeH));
     s("b_over",eur(over));
     var uitkeren=bvMode&&!houden;
     document.getElementById("b_box2_row").style.display=uitkeren?"":"none";
@@ -395,7 +396,6 @@
     s("b_result",uitkeren?eur(naBox2):eur(over));
     tone("b_result_stat",(uitkeren?naBox2:over)>=0);
 
-    s("d_schaal_out",eurRaw(schaal));
     s("d_schaal_units","≈ "+Math.round(schaal/bod)+"× de basisdeal");
     s("t_cfm",eur(nettoM)); tone("t_cfm_stat",nettoM>=0);
     s("t_maandlast",eur(maandlast));
@@ -422,6 +422,9 @@
   ids.forEach(function(id){var e=document.getElementById(id);e.addEventListener("input",calc);e.addEventListener("change",calc);});
   document.getElementById("f_link").addEventListener("input",saveState);
   document.getElementById("reset_btn").addEventListener("click",function(){try{localStorage.removeItem(KEY);}catch(e){}location.reload();});
+  var rng=document.getElementById("d_schaal"), numi=document.getElementById("d_schaal_num");
+  rng.addEventListener("input",function(){numi.value=rng.value;calc();});
+  numi.addEventListener("input",function(){var mn=parseFloat(rng.min),mx=parseFloat(rng.max);rng.value=Math.min(Math.max(parseFloat(numi.value)||0,mn),mx);});
 
   function parseNum(x){return parseFloat(String(x).replace(/\./g,"").replace(",","."));}
   async function fetchFunda(){
@@ -449,6 +452,7 @@
   document.getElementById("f_go").addEventListener("click",fetchFunda);
 
   loadState();
+  rng.value=Math.min(Math.max(g("d_schaal_num"),parseFloat(rng.min)),parseFloat(rng.max));
   calc();
 })();
 </script>
