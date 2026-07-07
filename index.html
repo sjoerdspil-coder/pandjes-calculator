@@ -85,7 +85,13 @@
           <div><label>Normale prijs nu (€)</label><input type="number" id="d_norm" value="15500"></div>
           <div><label>Jouw bod (€)</label><input type="number" id="d_bod" value="15500"></div>
         </div>
-        <label>Rente die verkoper krijgt p/jaar (%)</label><input type="number" id="d_rente" value="5" step="0.1">
+        <label>Vergoeding aan verkoper</label>
+        <select id="d_verg">
+          <option value="rente">Rente (% over de lening)</option>
+          <option value="huurdeel">% van de huur (i.p.v. rente)</option>
+        </select>
+        <label id="d_rente_lbl">Rente die verkoper krijgt p/jaar (%)</label><input type="number" id="d_rente" value="5" step="0.1">
+        <label id="d_huurdeel_lbl" style="display:none">Huurdeel aan verkoper (% van huur, tijdens looptijd)</label><input type="number" id="d_huurdeel" value="25" step="1" style="display:none">
         <label>Aflossingsvorm</label>
         <select id="d_vorm">
           <option value="annuiteit">Annuïteit (vaste maandlast: rente + aflossing)</option>
@@ -110,6 +116,7 @@
       </div>
       <div class="card">
         <h3><span class="step">3</span>Sweetener &amp; check</h3>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600"><input type="checkbox" id="d_sweet" checked style="width:auto;box-shadow:none"> Sweetener (huurafdracht) aanzetten</label>
         <label>Afdracht na looptijd: <span id="d_rsp" style="font-weight:600;color:var(--ink)"></span> van de <b>huidige</b> maandhuur <span style="color:var(--muted)">(vastgezet, stijgt niet mee)</span></label>
         <div class="sl"><input type="range" id="d_rspct" min="0" max="50" step="1" value="50"><span class="out" id="d_rspv"></span></div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px">= <span id="d_rseur" style="font-weight:600;color:var(--ink)"></span> per maand, vast</div>
@@ -149,7 +156,7 @@
           <div class="stat big" id="m_cf_stat"><div class="l">Netto cashflow p/maand</div><div class="v" id="m_netto">–</div></div>
         </div>
         <div class="ln plus"><span class="k">Huur ontvangen</span><span class="v" id="m_huur"></span></div>
-        <div class="ln minus"><span class="k">Rente aan verkoper</span><span class="v" id="m_rente"></span></div>
+        <div class="ln minus"><span class="k" id="m_rente_lbl">Rente aan verkoper</span><span class="v" id="m_rente"></span></div>
         <div class="ln minus"><span class="k">Aflossing aan verkoper</span><span class="v" id="m_afl"></span></div>
         <div class="ln minus"><span class="k">Servicekosten</span><span class="v" id="m_service"></span></div>
         <div class="ln minus"><span class="k">Onderhoud (reservering)</span><span class="v" id="m_onderhoud"></span></div>
@@ -224,7 +231,7 @@
 </div>
 <script>
 (function(){
-  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc","d_bv","d_houden","d_afschrijving","d_vpb","d_box2","d_schaal_num"];
+  var ids=["d_norm","d_bod","d_rente","d_verg","d_huurdeel","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_sweet","d_rspct","d_rsjaren","d_disc","d_bv","d_houden","d_afschrijving","d_vpb","d_box2","d_schaal_num"];
   var KEY="pandjes_calc_v3";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function val(id){return document.getElementById(id).value;}
@@ -251,6 +258,15 @@
 
     var ovbEur=bod*ovbP, inleg=ovbEur+notaris, totInvest=bod+ovbEur+notaris;
 
+    var vergHuur=(val("d_verg")==="huurdeel"), huurdeelPct=g("d_huurdeel")/100;
+    if(vergHuur){rente=0;}
+    document.getElementById("d_rente_lbl").style.display=vergHuur?"none":"";
+    document.getElementById("d_rente").style.display=vergHuur?"none":"";
+    document.getElementById("d_huurdeel_lbl").style.display=vergHuur?"":"none";
+    document.getElementById("d_huurdeel").style.display=vergHuur?"":"none";
+    var sweetOn=document.getElementById("d_sweet").checked;
+    if(!sweetOn){rsPct=0; rsJaren=0;}
+
     var im=rente/12, nm=looptijd*12;
     var maandlast, renteM1, aflM1, jaarDienst, totaleRente, slot;
     if(vorm==="aflossingsvrij"){
@@ -263,11 +279,15 @@
     }
 
     var onderhoudM=onderhoud/12, leegM=huurStart*leeg;
-    var nettoMpre=huurStart - maandlast - serviceM - onderhoudM - leegM;
+    var rentShareM1=vergHuur? huurdeelPct*huurStart : 0;
+    var compM1=vergHuur? rentShareM1 : renteM1;
+    var toSellerM1=aflM1+compM1;
+    var nettoMpre=huurStart - toSellerM1 - serviceM - onderhoudM - leegM;
     var rest1=(vorm==="aflossingsvrij")?((looptijd>1)?bod:0):((im>0)? bod*Math.pow(1+im,12)-maandlast*((Math.pow(1+im,12)-1)/im) : bod-(bod/nm)*12);
     if(rest1<0)rest1=0;
     var interest1=(vorm==="aflossingsvrij")? bod*rente : (jaarDienst-(bod-rest1));
-    var winst1=(huurStart*12*(1-leeg))-serviceM*12-onderhoud-interest1-afschrijving;
+    var finCost1=vergHuur? rentShareM1*12 : interest1;
+    var winst1=(huurStart*12*(1-leeg))-serviceM*12-onderhoud-finCost1-afschrijving;
     var vpb1=bvMode? Math.max(winst1,0)*vpbRate : 0;
     var vpb1M=vpb1/12;
     var nettoM=nettoMpre - vpb1M;
@@ -277,17 +297,10 @@
 
     var staartM=huurStart*rsPct;
     var staartJaar=staartM*12, totaalStaart=staartJaar*rsJaren;
-    var nominaal=bod+totaleRente+totaalStaart;
-
-    var pvDeal=0,t;
-    for(t=1;t<=looptijd;t++){pvDeal+=jaarDienst/Math.pow(1+disc,t);}
-    if(vorm==="aflossingsvrij"){pvDeal+=bod/Math.pow(1+disc,looptijd);}
-    for(t=looptijd+1;t<=looptijd+rsJaren;t++){pvDeal+=staartJaar/Math.pow(1+disc,t);}
 
     function gf(y){return Math.pow(1+groei,y-1);}
     var H=looptijd+rsJaren;
     var pandWaarde=bod;
-    var verkTot=nominaal;
 
     var horizon=Math.min(H+5,45);
     var th='<tr style="position:sticky;top:0;background:var(--soft)">'
@@ -296,12 +309,13 @@
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Netto p/jr</th>'
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Cumul. cash</th>'
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Incl. pand</th></tr>';
-    var tbody="", cum=-inleg, verlies=0, prevRest=bod, cumAtH=0;
+    var tbody="", cum=-inleg, verlies=0, prevRest=bod, cumAtH=0, sellerCompTot=0, pvDealAcc=0;
     var huurTot=0, lastenTot=0, vpbTot=0, yearNet=[];
     for(var yy=1;yy<=horizon;yy++){
       var fy=gf(yy);
       var rY=huurStart*fy*12, sY=serviceM*12*fy, oY=onderhoud*fy, lY=rY*leeg;
-      var dY=(yy<=looptijd)?jaarDienst:0;
+      var rentShareY=(vergHuur&&yy<=looptijd)? huurdeelPct*rY : 0;
+      var dY=((yy<=looptijd)?jaarDienst:0)+rentShareY;
       var swY=(yy>looptijd&&yy<=looptijd+rsJaren)?staartJaar:0;
       var nY=rY-sY-oY-lY-dY-swY;
       var restY;
@@ -310,9 +324,13 @@
       var interestY=0;
       if(yy<=looptijd){interestY=(vorm==="aflossingsvrij")? bod*rente : (jaarDienst-(prevRest-restY));}
       prevRest=restY;
+      var finCostY=vergHuur? rentShareY : interestY;
+      if(yy<=looptijd)sellerCompTot+=finCostY;
+      pvDealAcc+=(dY+swY)/Math.pow(1+disc,yy);
+      if(vorm==="aflossingsvrij"&&yy===looptijd)pvDealAcc+=bod/Math.pow(1+disc,looptijd);
       var vpb=0;
       if(bvMode){
-        var winst=(rY-lY)-sY-oY-interestY-afschrijving-swY;
+        var winst=(rY-lY)-sY-oY-finCostY-afschrijving-swY;
         var belast=winst-verlies;
         if(belast>0){vpb=belast*vpbRate; verlies=0;} else {verlies=-belast;}
       }
@@ -336,6 +354,9 @@
         +'<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+wCol+'">'+eur(netWorth)+'</td></tr>';
     }
     document.getElementById("yeartable").innerHTML=th+tbody;
+    var nominaal=bod+sellerCompTot+totaalStaart;
+    var verkTot=nominaal;
+    var pvDeal=pvDealAcc;
     var nettoRit=cumAtH;
     var pandWaardeH=bod*Math.pow(1+groei,H);
     var over=nettoRit+pandWaardeH;
@@ -350,10 +371,11 @@
     s("k_koop",eur(bod)); s("k_ovb",eur(ovbEur)); s("k_not",eur(notaris));
     s("k_totinvest",eur(totInvest)); s("k_gefin","− "+eur(bod)); s("k_inleg",eur(inleg));
 
-    s("m_maandlast",eur(maandlast));
+    s("m_maandlast",eur(toSellerM1));
     s("m_huur","+ "+eur(huurStart));
-    s("m_rente","− "+eur(renteM1));
-    s("m_afl",vorm==="aflossingsvrij"?"€ 0":"− "+eur(aflM1));
+    document.getElementById("m_rente_lbl").textContent=vergHuur?"Huurdeel aan verkoper":"Rente aan verkoper";
+    s("m_rente","− "+eur(compM1));
+    s("m_afl","− "+eur(aflM1));
     s("m_service","− "+eur(serviceM));
     s("m_onderhoud","− "+eur(onderhoudM));
     s("m_leeg","− "+eur(leegM));
@@ -398,7 +420,7 @@
 
     s("d_schaal_units","≈ "+Math.round(schaal/bod)+"× de basisdeal");
     s("t_cfm",eur(nettoM)); tone("t_cfm_stat",nettoM>=0);
-    s("t_maandlast",eur(maandlast));
+    s("t_maandlast",eur(toSellerM1));
     var tth='<tr style="position:sticky;top:0;background:var(--soft)">'
       +'<th style="text-align:left;padding:6px 8px;font-weight:600">Jaar</th>'
       +'<th style="text-align:left;padding:6px 4px;font-weight:600">Fase</th>'
