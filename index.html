@@ -144,7 +144,7 @@
       </div>
       <div class="card">
         <h3>Wat je overhoudt per jaar</h3>
-        <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">Huur en kosten stijgen mee; rente, aflossing en sweetener staan vast. Cumulatief telt je eigen inleg mee (start negatief), dus waar dat omslaat naar groen heb je alles terugverdiend.</div>
+        <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">Huur en kosten stijgen mee; rente, aflossing en sweetener staan vast. <b>Cumul. cash</b> telt je inleg mee (start negatief) — waar het groen wordt heb je je geld terugverdiend. <b>Incl. pand</b> telt ook je opgebouwde eigendom mee (pandwaarde minus restschuld).</div>
         <div style="max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:8px">
           <table id="yeartable" style="width:100%;border-collapse:collapse;font-size:13px"></table>
         </div>
@@ -254,28 +254,35 @@
 
     var horizon=Math.min(H+5,45);
     var th='<tr style="position:sticky;top:0;background:var(--soft)">'
-      +'<th style="text-align:left;padding:7px 8px;font-weight:600">Jaar</th>'
-      +'<th style="text-align:left;padding:7px 6px;font-weight:600">Fase</th>'
-      +'<th style="text-align:right;padding:7px 8px;font-weight:600">Netto p/jaar</th>'
-      +'<th style="text-align:right;padding:7px 8px;font-weight:600">Cumulatief</th></tr>';
-    var tbody="", cum=-inleg;
+      +'<th style="text-align:left;padding:6px 6px;font-weight:600">Jaar</th>'
+      +'<th style="text-align:left;padding:6px 4px;font-weight:600">Fase</th>'
+      +'<th style="text-align:right;padding:6px 6px;font-weight:600">Netto p/jr</th>'
+      +'<th style="text-align:right;padding:6px 6px;font-weight:600">Cumul. cash</th>'
+      +'<th style="text-align:right;padding:6px 6px;font-weight:600">Incl. pand</th></tr>';
+    var tbody="", cum=-inleg, cumNW=-inleg;
     for(var yy=1;yy<=horizon;yy++){
       var fy=gf(yy);
       var rY=huurStart*fy*12, sY=serviceM*12*fy, oY=onderhoud*fy, lY=rY*leeg;
       var dY=(yy<=looptijd)?jaarDienst:0;
       var swY=(yy>looptijd&&yy<=looptijd+rsJaren)?staartJaar:0;
       var nY=rY-sY-oY-lY-dY-swY;
-      cum+=nY;
+      cum+=nY; cumNW+=nY;
+      if(vorm==="aflossingsvrij"&&yy===looptijd){cumNW-=bod;}
+      var rest;
+      if(vorm==="aflossingsvrij"){rest=(yy<looptijd)?bod:0;}
+      else{var mm=Math.min(yy*12,nm); rest=(im>0)? bod*Math.pow(1+im,mm)-maandlast*((Math.pow(1+im,mm)-1)/im) : bod-(bod/nm)*mm; if(yy>=looptijd||rest<0)rest=0;}
+      var netWorth=cumNW+(pandWaarde-rest);
       var faseTxt,faseCol;
       if(yy<=looptijd){faseTxt="aflossen";faseCol="var(--muted)";}
       else if(yy<=looptijd+rsJaren){faseTxt="staartje";faseCol="var(--warn)";}
       else{faseTxt="vrij";faseCol="var(--good)";}
-      var nCol=nY>=0?"var(--good)":"var(--bad)", cCol=cum>=0?"var(--good)":"var(--bad)";
+      var nCol=nY>=0?"var(--good)":"var(--bad)", cCol=cum>=0?"var(--good)":"var(--bad)", wCol=netWorth>=0?"var(--good)":"var(--bad)";
       tbody+='<tr style="border-top:1px solid var(--line)">'
-        +'<td style="padding:6px 8px">'+yy+'</td>'
-        +'<td style="padding:6px 6px;color:'+faseCol+';font-size:12px">'+faseTxt+'</td>'
-        +'<td style="padding:6px 8px;text-align:right;font-weight:600;color:'+nCol+'">'+(nY>=0?"+ ":"− ")+eur(Math.abs(nY))+'</td>'
-        +'<td style="padding:6px 8px;text-align:right;color:'+cCol+'">'+eur(cum)+'</td></tr>';
+        +'<td style="padding:6px 6px">'+yy+'</td>'
+        +'<td style="padding:6px 4px;color:'+faseCol+';font-size:11px">'+faseTxt+'</td>'
+        +'<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+nCol+'">'+(nY>=0?"+ ":"− ")+eur(Math.abs(nY))+'</td>'
+        +'<td style="padding:6px 6px;text-align:right;color:'+cCol+'">'+eur(cum)+'</td>'
+        +'<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+wCol+'">'+eur(netWorth)+'</td></tr>';
     }
     document.getElementById("yeartable").innerHTML=th+tbody;
 
