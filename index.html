@@ -17,11 +17,12 @@
   .fundabar{background:var(--fundabar);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:6px}
   .fundalogo{background:#fff;color:#0a6ebd;font-weight:800;font-size:20px;letter-spacing:-.5px;padding:3px 12px 5px;border-radius:8px;line-height:1}
   .fundabar .bt{color:#fff;font-size:15px;font-weight:700}
+  .fundabar .save{margin-left:auto;background:rgba(255,255,255,.25);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer}
   .disc{font-size:11px;color:var(--muted);margin:0 0 8px;font-style:italic}
   .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
   .grid3{display:grid;grid-template-columns:340px 1fr 1fr;gap:16px;align-items:start}
   @media(max-width:980px){.grid3{grid-template-columns:1fr}}
-  .colhead{font-size:14px;font-weight:700;color:var(--ink);margin:2px 0 10px;padding-left:2px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
+  .colhead{font-size:14px;font-weight:700;color:var(--ink);margin:2px 0 10px;border-left:3px solid var(--accent);padding:2px 0 2px 10px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
   .card+.card{margin-top:16px}
   .card h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 10px;font-weight:600}
@@ -55,9 +56,10 @@
   <div class="fundabar">
     <span class="fundalogo">funda</span>
     <span class="bt">Deal- &amp; rendementscalculator</span>
+    <button class="save" id="reset_btn">Reset naar standaard</button>
   </div>
-  <p class="disc">Onafhankelijke rekentool op basis van Funda-advertenties — niet gemaakt door of verbonden aan Funda.</p>
-  <p class="sub">Verkopersfinanciering zonder eigen inleg in de koopsom. Vul links de deal in, zie in het midden het overzicht van kosten en maandlasten, en rechts de resultaten.</p>
+  <p class="disc">Onafhankelijke rekentool op basis van Funda-advertenties — niet gemaakt door of verbonden aan Funda. Je instellingen worden lokaal in je browser bewaard.</p>
+  <p class="sub">Verkopersfinanciering zonder eigen inleg in de koopsom. Vul links de deal in, zie in het midden het overzicht en rechts de resultaten.</p>
 
   <div class="grid3">
 
@@ -88,7 +90,8 @@
       </div>
       <div class="card">
         <h3><span class="step">2</span>Kosten &amp; huur</h3>
-        <label>Huur per maand (€) <span style="color:var(--muted)">— schat zelf in</span></label><input type="number" id="d_huur" value="105">
+        <label>Huur per maand nu (€) <span style="color:var(--muted)">— schat zelf in</span></label><input type="number" id="d_huur" value="105">
+        <label>Verwachte huurstijging p/jaar (%)</label><input type="number" id="d_groei" value="3" step="0.1">
         <div class="r2">
           <div><label>Overdrachtsbel. (%)</label><input type="number" id="d_ovb" value="10.4" step="0.1"></div>
           <div><label>Notaris + kadaster (€)</label><input type="number" id="d_notaris" value="750"></div>
@@ -101,8 +104,9 @@
       </div>
       <div class="card">
         <h3><span class="step">3</span>Sweetener &amp; check</h3>
-        <label>Afdracht na looptijd: <span id="d_rsp" style="font-weight:600;color:var(--ink)"></span> van huur</label>
+        <label>Afdracht na looptijd: <span id="d_rsp" style="font-weight:600;color:var(--ink)"></span> van de <b>huidige</b> maandhuur <span style="color:var(--muted)">(vastgezet, stijgt niet mee)</span></label>
         <div class="sl"><input type="range" id="d_rspct" min="0" max="50" step="1" value="10"><span class="out" id="d_rspv"></span></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">= <span id="d_rseur" style="font-weight:600;color:var(--ink)"></span> per maand, vast</div>
         <label>Aantal jaren afdracht: <span id="d_rsj" style="font-weight:600;color:var(--ink)"></span></label>
         <div class="sl"><input type="range" id="d_rsjaren" min="0" max="15" step="1" value="5"><span class="out" id="d_rsjv"></span></div>
         <label>Disconteringsvoet verkoper (%) <span style="color:var(--muted)">— geld nu waard</span></label>
@@ -123,7 +127,7 @@
         <div class="ln tot"><span class="k">Jouw eigen inleg nu (cash)</span><span class="v" id="k_inleg"></span></div>
       </div>
       <div class="card">
-        <h3>Jouw maandlasten (per maand)</h3>
+        <h3>Jouw maandlasten (nu, per maand)</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
           <div class="stat"><div class="l">Maandlast aan verkoper</div><div class="v" id="m_maandlast">–</div></div>
           <div class="stat big" id="m_cf_stat"><div class="l">Netto cashflow p/maand</div><div class="v" id="m_netto">–</div></div>
@@ -140,6 +144,7 @@
       </div>
       <div class="card">
         <h3>Wat je overhoudt per fase (per maand)</h3>
+        <div style="font-size:11px;color:var(--muted);margin:-4px 0 6px">Huur groeit mee met de stijging; de sweetener staat vast.</div>
         <div class="ln"><span class="k"><b id="f1_lbl" style="color:var(--ink)"></b><br><span style="font-size:11px" id="f1_sub"></span></span><span class="v" id="f1_v"></span></div>
         <div class="ln" id="f2_row"><span class="k"><b id="f2_lbl" style="color:var(--ink)"></b><br><span style="font-size:11px" id="f2_sub"></span></span><span class="v" id="f2_v"></span></div>
         <div class="ln"><span class="k"><b id="f3_lbl" style="color:var(--ink)"></b><br><span style="font-size:11px" id="f3_sub"></span></span><span class="v" id="f3_v"></span></div>
@@ -150,12 +155,12 @@
     <div>
       <div class="colhead">Resultaten</div>
       <div class="card">
-        <h3>Jouw rendement</h3>
+        <h3>Jouw rendement (aanvang)</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="stat"><div class="l">Rendement op eigen inleg</div><div class="v" id="r_coc">–</div></div>
           <div class="stat"><div class="l">Bruto aanvangsrendement</div><div class="v" id="r_bar">–</div></div>
         </div>
-        <div class="ln" style="margin-top:10px"><span class="k">Netto cashflow p/jaar</span><span class="v" id="r_nettojr"></span></div>
+        <div class="ln" style="margin-top:10px"><span class="k">Netto cashflow p/jaar (nu)</span><span class="v" id="r_nettojr"></span></div>
       </div>
       <div class="card" style="border-color:var(--accent)">
         <h3>Wat krijg jij als koper? (hele rit, nominaal)</h3>
@@ -163,7 +168,7 @@
           <div class="stat big" id="b_result_stat"><div class="l">Onderaan de streep</div><div class="v" id="b_result">–</div></div>
           <div class="stat"><div class="l">Periode tot pand vrij</div><div class="v" id="b_h">–</div></div>
         </div>
-        <div class="ln plus"><span class="k">Totale huur ontvangen</span><span class="v" id="b_huur"></span></div>
+        <div class="ln plus"><span class="k">Totale huur (incl. stijging)</span><span class="v" id="b_huur"></span></div>
         <div class="ln minus"><span class="k">Aan verkoper (koopsom + rente + staart)</span><span class="v" id="b_verk"></span></div>
         <div class="ln minus"><span class="k">Lasten (service/onderhoud/leegstand)</span><span class="v" id="b_lasten"></span></div>
         <div class="ln minus"><span class="k">Eigen inleg (ovb + notaris)</span><span class="v" id="b_inleg"></span></div>
@@ -183,22 +188,27 @@
         <div class="ln tot"><span class="k">Verschil contant vs. nu</span><span class="v" id="o_pvversch"></span></div>
         <div id="o_verdict"></div>
       </div>
-      <p class="foot">Indicatief, exclusief inkomsten-/box 3-belasting en waardestijging. Rente en aflossing zijn eerste-maand-bedragen; bij annuïteit blijft de maandlast gelijk maar verschuift die van rente naar aflossing. Aflossing bouwt eigen vermogen op. De afdracht-staart valt ná de looptijd. Geen fiscaal of financieel advies.</p>
+      <p class="foot">Indicatief, exclusief inkomsten-/box 3-belasting en waardestijging van het pand. De sweetener is een vast bedrag (% van de huidige maandhuur, vastgezet bij de deal) en stijgt niet mee met de huur. Aflossing bouwt eigen vermogen op. Geen fiscaal of financieel advies.</p>
     </div>
   </div>
 </div>
 <script>
 (function(){
-  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc"];
+  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc"];
+  var KEY="pandjes_calc_v2";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function val(id){return document.getElementById(id).value;}
   function s(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
   function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
   function pct(n){return isFinite(n)?n.toFixed(1)+" %":"–";}
   function tone(id,ok){var e=document.getElementById(id);if(!e)return;e.classList.toggle("good",ok);e.classList.toggle("bad",!ok);}
+
+  function saveState(){try{var o={};ids.forEach(function(id){o[id]=document.getElementById(id).value;});o.f_link=document.getElementById("f_link").value;localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  function loadState(){try{var o=JSON.parse(localStorage.getItem(KEY));if(!o)return;Object.keys(o).forEach(function(k){var e=document.getElementById(k);if(e)e.value=o[k];});}catch(e){}}
+
   function calc(){
     var norm=g("d_norm"), bod=g("d_bod"), rente=g("d_rente")/100, vorm=val("d_vorm");
-    var looptijd=Math.round(g("d_looptijd")), huurM=g("d_huur");
+    var looptijd=Math.round(g("d_looptijd")), huurStart=g("d_huur"), groei=g("d_groei")/100;
     var rsPct=g("d_rspct")/100, rsJaren=Math.round(g("d_rsjaren")), disc=g("d_disc")/100;
     var ovbP=g("d_ovb")/100, notaris=g("d_notaris");
     var serviceM=g("d_service"), onderhoud=g("d_onderhoud"), leeg=g("d_leeg")/100;
@@ -216,28 +226,45 @@
       jaarDienst=maandlast*12; totaleRente=maandlast*nm-bod; slot=0;
     }
 
-    var onderhoudM=onderhoud/12, leegM=huurM*leeg;
-    var nettoM=huurM - maandlast - serviceM - onderhoudM - leegM;
+    var onderhoudM=onderhoud/12, leegM=huurStart*leeg;
+    var nettoM=huurStart - maandlast - serviceM - onderhoudM - leegM;
     var nettoJr=nettoM*12;
     var coc=inleg>0?nettoJr/inleg*100:Infinity;
-    var bar=totInvest>0?(huurM*12)/totInvest*100:0;
+    var bar=totInvest>0?(huurStart*12)/totInvest*100:0;
 
-    var staartJaar=huurM*12*rsPct, totaalStaart=staartJaar*rsJaren;
+    var staartM=huurStart*rsPct;
+    var staartJaar=staartM*12, totaalStaart=staartJaar*rsJaren;
     var nominaal=bod+totaleRente+totaalStaart;
+
     var pvDeal=0,t;
     for(t=1;t<=looptijd;t++){pvDeal+=jaarDienst/Math.pow(1+disc,t);}
     if(vorm==="aflossingsvrij"){pvDeal+=bod/Math.pow(1+disc,looptijd);}
     for(t=looptijd+1;t<=looptijd+rsJaren;t++){pvDeal+=staartJaar/Math.pow(1+disc,t);}
 
+    function rentYear(y){return huurStart*Math.pow(1+groei,y-1);}
+    var H=looptijd+rsJaren;
+    var huurTot=0; for(t=1;t<=H;t++){huurTot+=rentYear(t)*12;}
+    var lastenTot=serviceM*12*H + onderhoud*H + leeg*huurTot;
+    var verkTot=nominaal;
+    var nettoRit=huurTot-verkTot-lastenTot-inleg;
+    var pandWaarde=bod;
+    var over=nettoRit+pandWaarde;
+
+    var rent1=rentYear(1), rent2=rentYear(looptijd+1), rent3=rentYear(looptijd+rsJaren+1);
+    var fase1=nettoM;
+    var fase2=rent2 - serviceM - onderhoudM - rent2*leeg - staartM;
+    var fase3=rent3 - serviceM - onderhoudM - rent3*leeg;
+
     s("d_ltout",looptijd+" jaar"); s("d_ltv",looptijd+"j");
     s("d_rsp",g("d_rspct")+"%"); s("d_rspv",g("d_rspct")+"%");
+    s("d_rseur",eur(staartM));
     s("d_rsj",rsJaren+" jaar"); s("d_rsjv",rsJaren+"j");
 
     s("k_koop",eur(bod)); s("k_ovb",eur(ovbEur)); s("k_not",eur(notaris));
     s("k_totinvest",eur(totInvest)); s("k_gefin","− "+eur(bod)); s("k_inleg",eur(inleg));
 
     s("m_maandlast",eur(maandlast));
-    s("m_huur","+ "+eur(huurM));
+    s("m_huur","+ "+eur(huurStart));
     s("m_rente","− "+eur(renteM1));
     s("m_afl",vorm==="aflossingsvrij"?"€ 0":"− "+eur(aflM1));
     s("m_service","− "+eur(serviceM));
@@ -251,23 +278,20 @@
     if(nettoM>=0){mv.innerHTML='<span class="badge" style="background:var(--goodbg);color:var(--good)">Cashflow-positief: +'+eur(nettoM)+' per maand</span>';}
     else{mv.innerHTML='<span class="badge" style="background:var(--badbg);color:var(--bad)">Cashflow-negatief: '+eur(nettoM)+' per maand</span>';}
 
-    var staartM=huurM*rsPct;
-    var fase2=huurM - serviceM - onderhoudM - leegM - staartM;
-    var fase3=huurM - serviceM - onderhoudM - leegM;
     document.getElementById("f1_lbl").textContent="Tijdens aflossen";
-    document.getElementById("f1_sub").textContent="Jaar 1–"+looptijd+" · je betaalt nog aan de verkoper";
+    document.getElementById("f1_sub").textContent="Jaar 1–"+looptijd+" · huur "+eur(rent1)+" · betaalt nog aan verkoper";
     var e1=document.getElementById("f1_v");
-    e1.textContent=(nettoM>=0?"+ ":"− ")+eur(Math.abs(nettoM)); e1.style.color=nettoM>=0?"var(--good)":"var(--bad)";
+    e1.textContent=(fase1>=0?"+ ":"− ")+eur(Math.abs(fase1)); e1.style.color=fase1>=0?"var(--good)":"var(--bad)";
     var f2row=document.getElementById("f2_row");
     if(rsJaren>0){
       f2row.style.display="";
       document.getElementById("f2_lbl").textContent="Afgelost, mét staartje";
-      document.getElementById("f2_sub").textContent="Jaar "+(looptijd+1)+"–"+(looptijd+rsJaren)+" · "+g("d_rspct")+"% huur naar verkoper";
+      document.getElementById("f2_sub").textContent="Jaar "+(looptijd+1)+"–"+(looptijd+rsJaren)+" · huur "+eur(rent2)+" · sweetener "+eur(staartM)+" vast";
       var e2=document.getElementById("f2_v");
       e2.textContent=(fase2>=0?"+ ":"− ")+eur(Math.abs(fase2)); e2.style.color=fase2>=0?"var(--good)":"var(--bad)";
     } else { f2row.style.display="none"; }
     document.getElementById("f3_lbl").textContent="Pand volledig vrij";
-    document.getElementById("f3_sub").textContent="Vanaf jaar "+(looptijd+rsJaren+1)+" · geen verplichtingen meer";
+    document.getElementById("f3_sub").textContent="Vanaf jaar "+(looptijd+rsJaren+1)+" · huur "+eur(rent3)+" · geen verplichtingen";
     var e3=document.getElementById("f3_v");
     e3.textContent=(fase3>=0?"+ ":"− ")+eur(Math.abs(fase3)); e3.style.color=fase3>=0?"var(--good)":"var(--bad)";
 
@@ -284,13 +308,6 @@
     if(pvd>=0){v.innerHTML='<span class="badge" style="background:var(--goodbg);color:var(--good)">Ook contant gunstiger voor de verkoper: +'+eur(pvd)+'</span>';}
     else{v.innerHTML='<span class="badge" style="background:var(--warnbg);color:var(--warn)">Nominaal meer, maar contant '+eur(Math.abs(pvd))+' minder — hier moet je overtuigen</span>';}
 
-    var H=looptijd+rsJaren;
-    var huurTot=huurM*12*H;
-    var verkTot=nominaal;
-    var lastenTot=(serviceM*12+onderhoud+leegM*12)*H;
-    var nettoRit=huurTot-verkTot-lastenTot-inleg;
-    var pandWaarde=bod;
-    var over=nettoRit+pandWaarde;
     s("b_h",H+" jaar");
     s("b_huur","+ "+eur(huurTot));
     s("b_verk","− "+eur(verkTot));
@@ -301,15 +318,19 @@
     s("b_over",eur(over));
     s("b_result",eur(over));
     tone("b_result_stat",over>=0);
+
+    saveState();
   }
   ids.forEach(function(id){var e=document.getElementById(id);e.addEventListener("input",calc);e.addEventListener("change",calc);});
+  document.getElementById("f_link").addEventListener("input",saveState);
+  document.getElementById("reset_btn").addEventListener("click",function(){try{localStorage.removeItem(KEY);}catch(e){}location.reload();});
 
   function parseNum(x){return parseFloat(String(x).replace(/\./g,"").replace(",","."));}
   async function fetchFunda(){
     var st=document.getElementById("f_status");
     var url=(document.getElementById("f_link").value||"").trim();
     if(!url){st.textContent="Plak eerst een Funda-link.";return;}
-    if(!(window.cowork&&window.cowork.callMcpTool)){st.textContent="Automatisch ophalen werkt alleen binnen Cowork. Vul hier de koopsom en servicekosten handmatig in.";return;}
+    if(!(window.cowork&&window.cowork.callMcpTool)){st.textContent="Automatisch ophalen werkt alleen binnen de Cowork-app. Vul hier de koopsom en servicekosten handmatig in.";return;}
     st.textContent="Bezig met ophalen…";
     try{
       var r=await window.cowork.callMcpTool("mcp__workspace__web_fetch",{url:url});
@@ -328,6 +349,8 @@
     }
   }
   document.getElementById("f_go").addEventListener("click",fetchFunda);
+
+  loadState();
   calc();
 })();
 </script>
