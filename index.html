@@ -79,7 +79,7 @@
           <div><label>Normale prijs nu (€)</label><input type="number" id="d_norm" value="15500"></div>
           <div><label>Jouw bod (€)</label><input type="number" id="d_bod" value="15500"></div>
         </div>
-        <label>Rente die verkoper krijgt p/jaar (%)</label><input type="number" id="d_rente" value="0" step="0.1">
+        <label>Rente die verkoper krijgt p/jaar (%)</label><input type="number" id="d_rente" value="5" step="0.1">
         <label>Aflossingsvorm</label>
         <select id="d_vorm">
           <option value="annuiteit">Annuïteit (vaste maandlast: rente + aflossing)</option>
@@ -148,6 +148,7 @@
         <div class="ln minus"><span class="k">Servicekosten</span><span class="v" id="m_service"></span></div>
         <div class="ln minus"><span class="k">Onderhoud (reservering)</span><span class="v" id="m_onderhoud"></span></div>
         <div class="ln minus"><span class="k">Leegstand (reservering)</span><span class="v" id="m_leeg"></span></div>
+        <div class="ln minus" id="m_vpb_row" style="display:none"><span class="k">Vennootschapsbelasting (÷12)</span><span class="v" id="m_vpb"></span></div>
         <div class="ln tot"><span class="k">Netto cashflow p/maand</span><span class="v" id="m_nettoln"></span></div>
         <div class="ln"><span class="k" id="m_slotlabel">Restschuld aan het eind</span><span class="v" id="m_slot"></span></div>
         <div id="m_verdict"></div>
@@ -224,6 +225,9 @@
     var rsPct=g("d_rspct")/100, rsJaren=Math.round(g("d_rsjaren")), disc=g("d_disc")/100;
     var ovbP=g("d_ovb")/100, notaris=g("d_notaris");
     var serviceM=g("d_service"), onderhoud=g("d_onderhoud"), leeg=g("d_leeg")/100;
+    var bvMode=document.getElementById("d_bv").checked;
+    var houden=document.getElementById("d_houden").checked;
+    var afschrijving=g("d_afschrijving"), vpbRate=g("d_vpb")/100, box2Rate=g("d_box2")/100;
 
     var ovbEur=bod*ovbP, inleg=ovbEur+notaris, totInvest=bod+ovbEur+notaris;
 
@@ -239,7 +243,14 @@
     }
 
     var onderhoudM=onderhoud/12, leegM=huurStart*leeg;
-    var nettoM=huurStart - maandlast - serviceM - onderhoudM - leegM;
+    var nettoMpre=huurStart - maandlast - serviceM - onderhoudM - leegM;
+    var rest1=(vorm==="aflossingsvrij")?((looptijd>1)?bod:0):((im>0)? bod*Math.pow(1+im,12)-maandlast*((Math.pow(1+im,12)-1)/im) : bod-(bod/nm)*12);
+    if(rest1<0)rest1=0;
+    var interest1=(vorm==="aflossingsvrij")? bod*rente : (jaarDienst-(bod-rest1));
+    var winst1=(huurStart*12*(1-leeg))-serviceM*12-onderhoud-interest1-afschrijving;
+    var vpb1=bvMode? Math.max(winst1,0)*vpbRate : 0;
+    var vpb1M=vpb1/12;
+    var nettoM=nettoMpre - vpb1M;
     var nettoJr=nettoM*12;
     var coc=inleg>0?nettoJr/inleg*100:Infinity;
     var bar=totInvest>0?(huurStart*12)/totInvest*100:0;
@@ -257,9 +268,6 @@
     var H=looptijd+rsJaren;
     var pandWaarde=bod;
     var verkTot=nominaal;
-    var bvMode=document.getElementById("d_bv").checked;
-    var houden=document.getElementById("d_houden").checked;
-    var afschrijving=g("d_afschrijving"), vpbRate=g("d_vpb")/100, box2Rate=g("d_box2")/100;
 
     var horizon=Math.min(H+5,45);
     var th='<tr style="position:sticky;top:0;background:var(--soft)">'
@@ -326,6 +334,8 @@
     s("m_service","− "+eur(serviceM));
     s("m_onderhoud","− "+eur(onderhoudM));
     s("m_leeg","− "+eur(leegM));
+    document.getElementById("m_vpb_row").style.display=bvMode?"":"none";
+    if(bvMode)s("m_vpb","− "+eur(vpb1M));
     s("m_netto",eur(nettoM)); s("m_nettoln",eur(nettoM));
     if(vorm==="aflossingsvrij"){s("m_slotlabel","Slotsom koopsom aan het eind"); s("m_slot",eur(slot));}
     else{s("m_slotlabel","Restschuld aan het eind"); s("m_slot","€ 0 (afgelost)");}
