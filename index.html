@@ -112,6 +112,16 @@
         <label>Disconteringsvoet verkoper (%) <span style="color:var(--muted)">— geld nu waard</span></label>
         <input type="number" id="d_disc" value="4" step="0.5">
       </div>
+      <div class="card">
+        <h3><span class="step">4</span>Belasting (BV)</h3>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600"><input type="checkbox" id="d_bv" checked style="width:auto;box-shadow:none"> Rekenen in een BV</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600"><input type="checkbox" id="d_houden" checked style="width:auto;box-shadow:none"> Rendement in de BV houden (niet uitkeren)</label>
+        <label>Afschrijving pand p/jaar (€) <span style="color:var(--muted)">— vaak beperkt of €0 bij parkeren</span></label><input type="number" id="d_afschrijving" value="0">
+        <div class="r2">
+          <div><label>Vpb-tarief (%)</label><input type="number" id="d_vpb" value="19" step="0.1"></div>
+          <div><label>Box 2 privé (%)</label><input type="number" id="d_box2" value="24.5" step="0.1"></div>
+        </div>
+      </div>
     </div>
 
     <!-- KOLOM 2: OVERZICHT -->
@@ -172,9 +182,11 @@
         <div class="ln minus"><span class="k">Aan verkoper (koopsom + rente + staart)</span><span class="v" id="b_verk"></span></div>
         <div class="ln minus"><span class="k">Lasten (service/onderhoud/leegstand)</span><span class="v" id="b_lasten"></span></div>
         <div class="ln minus"><span class="k">Eigen inleg (ovb + notaris)</span><span class="v" id="b_inleg"></span></div>
+        <div class="ln minus" id="b_vpb_row" style="display:none"><span class="k">Vennootschapsbelasting (BV)</span><span class="v" id="b_vpb"></span></div>
         <div class="ln tot"><span class="k">Netto cashflow over de rit</span><span class="v" id="b_netto"></span></div>
         <div class="ln plus"><span class="k">Pand in bezit, vrij van schuld (± koopsom)</span><span class="v" id="b_pand"></span></div>
-        <div class="ln tot"><span class="k">Wat jij overhoudt</span><span class="v" id="b_over"></span></div>
+        <div class="ln tot"><span class="k">Wat jij overhoudt (in de BV)</span><span class="v" id="b_over"></span></div>
+        <div class="ln" id="b_box2_row" style="display:none"><span class="k">Netto naar privé</span><span class="v" id="b_box2v"></span></div>
       </div>
       <div class="card">
         <h3>Wat krijgt de verkoper?</h3>
@@ -188,14 +200,14 @@
         <div class="ln tot"><span class="k">Verschil contant vs. nu</span><span class="v" id="o_pvversch"></span></div>
         <div id="o_verdict"></div>
       </div>
-      <p class="foot">Indicatief, exclusief inkomsten-/box 3-belasting en waardestijging van het pand. Huur, servicekosten, onderhoud en leegstand stijgen mee met de jaarlijkse indexatie; rente, aflossing en sweetener staan vast — daardoor wordt de deal met de jaren steeds gunstiger voor jou. Aflossing bouwt eigen vermogen op. Geen fiscaal of financieel advies.</p>
+      <p class="foot">Indicatief, exclusief inkomsten-/box 3-belasting en waardestijging van het pand. Huur, servicekosten, onderhoud en leegstand stijgen mee met de jaarlijkse indexatie; rente, aflossing en sweetener staan vast — daardoor wordt de deal met de jaren steeds gunstiger voor jou. Aflossing bouwt eigen vermogen op. BV-modus: over de winst (huur minus kosten, aftrekbare rente en afschrijving) wordt vpb gerekend met verliesverrekening; aflossing is niet aftrekbaar. 'Netto naar privé' is een grove box 2-schatting bij volledige uitkering — de precieze fiscale behandeling (afschrijvingsbeperking, sweetener als kost of koopprijs, box 2-timing) hangt af van je situatie. Geen fiscaal of financieel advies — overleg met een accountant.</p>
     </div>
   </div>
 </div>
 <script>
 (function(){
-  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc"];
-  var KEY="pandjes_calc_v2";
+  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc","d_bv","d_houden","d_afschrijving","d_vpb","d_box2"];
+  var KEY="pandjes_calc_v3";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function val(id){return document.getElementById(id).value;}
   function s(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
@@ -203,8 +215,8 @@
   function pct(n){return isFinite(n)?n.toFixed(1)+" %":"–";}
   function tone(id,ok){var e=document.getElementById(id);if(!e)return;e.classList.toggle("good",ok);e.classList.toggle("bad",!ok);}
 
-  function saveState(){try{var o={};ids.forEach(function(id){o[id]=document.getElementById(id).value;});o.f_link=document.getElementById("f_link").value;localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
-  function loadState(){try{var o=JSON.parse(localStorage.getItem(KEY));if(!o)return;Object.keys(o).forEach(function(k){var e=document.getElementById(k);if(e)e.value=o[k];});}catch(e){}}
+  function saveState(){try{var o={};ids.forEach(function(id){var e=document.getElementById(id);o[id]=(e.type==="checkbox")?e.checked:e.value;});o.f_link=document.getElementById("f_link").value;localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  function loadState(){try{var o=JSON.parse(localStorage.getItem(KEY));if(!o)return;Object.keys(o).forEach(function(k){var e=document.getElementById(k);if(!e)return;if(e.type==="checkbox")e.checked=!!o[k];else e.value=o[k];});}catch(e){}}
 
   function calc(){
     var norm=g("d_norm"), bod=g("d_bod"), rente=g("d_rente")/100, vorm=val("d_vorm");
@@ -242,15 +254,12 @@
     for(t=looptijd+1;t<=looptijd+rsJaren;t++){pvDeal+=staartJaar/Math.pow(1+disc,t);}
 
     function gf(y){return Math.pow(1+groei,y-1);}
-    function rentYear(y){return huurStart*gf(y);}
     var H=looptijd+rsJaren;
-    var huurTot=0, serviceTot=0, onderhoudTot=0;
-    for(t=1;t<=H;t++){var f=gf(t); huurTot+=huurStart*f*12; serviceTot+=serviceM*f*12; onderhoudTot+=onderhoud*f;}
-    var lastenTot=serviceTot + onderhoudTot + leeg*huurTot;
-    var verkTot=nominaal;
-    var nettoRit=huurTot-verkTot-lastenTot-inleg;
     var pandWaarde=bod;
-    var over=nettoRit+pandWaarde;
+    var verkTot=nominaal;
+    var bvMode=document.getElementById("d_bv").checked;
+    var houden=document.getElementById("d_houden").checked;
+    var afschrijving=g("d_afschrijving"), vpbRate=g("d_vpb")/100, box2Rate=g("d_box2")/100;
 
     var horizon=Math.min(H+5,45);
     var th='<tr style="position:sticky;top:0;background:var(--soft)">'
@@ -259,32 +268,48 @@
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Netto p/jr</th>'
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Cumul. cash</th>'
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Incl. pand</th></tr>';
-    var tbody="", cum=-inleg, cumNW=-inleg;
+    var tbody="", cum=-inleg, cumNW=-inleg, verlies=0, prevRest=bod;
+    var huurTot=0, lastenTot=0, vpbTot=0;
     for(var yy=1;yy<=horizon;yy++){
       var fy=gf(yy);
       var rY=huurStart*fy*12, sY=serviceM*12*fy, oY=onderhoud*fy, lY=rY*leeg;
       var dY=(yy<=looptijd)?jaarDienst:0;
       var swY=(yy>looptijd&&yy<=looptijd+rsJaren)?staartJaar:0;
       var nY=rY-sY-oY-lY-dY-swY;
-      cum+=nY; cumNW+=nY;
+      var restY;
+      if(vorm==="aflossingsvrij"){restY=(yy<looptijd)?bod:0;}
+      else{var mm=Math.min(yy*12,nm); restY=(im>0)? bod*Math.pow(1+im,mm)-maandlast*((Math.pow(1+im,mm)-1)/im) : bod-(bod/nm)*mm; if(yy>=looptijd||restY<0)restY=0;}
+      var interestY=0;
+      if(yy<=looptijd){interestY=(vorm==="aflossingsvrij")? bod*rente : (jaarDienst-(prevRest-restY));}
+      prevRest=restY;
+      var vpb=0;
+      if(bvMode){
+        var winst=(rY-lY)-sY-oY-interestY-afschrijving-swY;
+        var belast=winst-verlies;
+        if(belast>0){vpb=belast*vpbRate; verlies=0;} else {verlies=-belast;}
+      }
+      var nYat=nY-vpb;
+      cum+=nYat; cumNW+=nYat;
       if(vorm==="aflossingsvrij"&&yy===looptijd){cumNW-=bod;}
-      var rest;
-      if(vorm==="aflossingsvrij"){rest=(yy<looptijd)?bod:0;}
-      else{var mm=Math.min(yy*12,nm); rest=(im>0)? bod*Math.pow(1+im,mm)-maandlast*((Math.pow(1+im,mm)-1)/im) : bod-(bod/nm)*mm; if(yy>=looptijd||rest<0)rest=0;}
-      var netWorth=cumNW+(pandWaarde-rest);
+      var netWorth=cumNW+(pandWaarde-restY);
+      if(yy<=H){huurTot+=rY; lastenTot+=sY+oY+lY; vpbTot+=vpb;}
       var faseTxt,faseCol;
       if(yy<=looptijd){faseTxt="aflossen";faseCol="var(--muted)";}
       else if(yy<=looptijd+rsJaren){faseTxt="staartje";faseCol="var(--warn)";}
       else{faseTxt="vrij";faseCol="var(--good)";}
-      var nCol=nY>=0?"var(--good)":"var(--bad)", cCol=cum>=0?"var(--good)":"var(--bad)", wCol=netWorth>=0?"var(--good)":"var(--bad)";
+      var nCol=nYat>=0?"var(--good)":"var(--bad)", cCol=cum>=0?"var(--good)":"var(--bad)", wCol=netWorth>=0?"var(--good)":"var(--bad)";
       tbody+='<tr style="border-top:1px solid var(--line)">'
         +'<td style="padding:6px 6px">'+yy+'</td>'
         +'<td style="padding:6px 4px;color:'+faseCol+';font-size:11px">'+faseTxt+'</td>'
-        +'<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+nCol+'">'+(nY>=0?"+ ":"− ")+eur(Math.abs(nY))+'</td>'
+        +'<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+nCol+'">'+(nYat>=0?"+ ":"− ")+eur(Math.abs(nYat))+'</td>'
         +'<td style="padding:6px 6px;text-align:right;color:'+cCol+'">'+eur(cum)+'</td>'
         +'<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+wCol+'">'+eur(netWorth)+'</td></tr>';
     }
     document.getElementById("yeartable").innerHTML=th+tbody;
+    var nettoRit=huurTot-verkTot-lastenTot-inleg-vpbTot;
+    var over=nettoRit+pandWaarde;
+    var box2=(over>0)?over*box2Rate:0;
+    var naBox2=over-box2;
 
     s("d_ltout",looptijd+" jaar"); s("d_ltv",looptijd+"j");
     s("d_rsp",g("d_rspct")+"%"); s("d_rspv",g("d_rspct")+"%");
@@ -327,11 +352,16 @@
     s("b_verk","− "+eur(verkTot));
     s("b_lasten","− "+eur(lastenTot));
     s("b_inleg","− "+eur(inleg));
+    document.getElementById("b_vpb_row").style.display=bvMode?"":"none";
+    if(bvMode)s("b_vpb","− "+eur(vpbTot));
     s("b_netto",(nettoRit>=0?"+ ":"− ")+eur(Math.abs(nettoRit)));
     s("b_pand","+ "+eur(pandWaarde));
     s("b_over",eur(over));
-    s("b_result",eur(over));
-    tone("b_result_stat",over>=0);
+    var uitkeren=bvMode&&!houden;
+    document.getElementById("b_box2_row").style.display=uitkeren?"":"none";
+    if(uitkeren)s("b_box2v",eur(naBox2)+"  (na "+eur(box2)+" box 2)");
+    s("b_result",uitkeren?eur(naBox2):eur(over));
+    tone("b_result_stat",(uitkeren?naBox2:over)>=0);
 
     saveState();
   }
