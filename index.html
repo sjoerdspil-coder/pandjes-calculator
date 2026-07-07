@@ -61,6 +61,12 @@
   <p class="disc">Onafhankelijke rekentool op basis van Funda-advertenties — niet gemaakt door of verbonden aan Funda. Je instellingen worden lokaal in je browser bewaard.</p>
   <p class="sub">Verkopersfinanciering zonder eigen inleg in de koopsom. Vul links de deal in, zie in het midden het overzicht en rechts de resultaten.</p>
 
+  <div class="card" style="border-color:var(--accent);margin-bottom:16px">
+    <label style="font-weight:700;color:var(--ink);font-size:14px">Simulatie — totale aankoopwaarde: <span id="d_schaal_out" style="color:var(--accent)"></span> <span id="d_schaal_units" style="color:var(--muted);font-weight:400;font-size:12px"></span></label>
+    <div class="sl"><input type="range" id="d_schaal" min="10000" max="10000000" step="500" value="15500"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">Alle bedragen in de hele tool schalen lineair mee vanaf de basisdeal die je links invult. Percentages (rendement) blijven gelijk. Zet de schuif op de laagste stand voor de kleinste schaal.</div>
+  </div>
+
   <div class="grid3">
 
     <!-- KOLOM 1: INVULLEN -->
@@ -190,6 +196,17 @@
         <div class="ln" id="b_box2_row" style="display:none"><span class="k">Netto naar privé</span><span class="v" id="b_box2v"></span></div>
       </div>
       <div class="card">
+        <h3>Maandcashflow per jaar (op schaal)</h3>
+        <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px">Netto cashflow per maand op de gekozen totale aankoopwaarde (zie de schuif bovenaan).</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px">
+          <div class="stat big" id="t_cfm_stat"><div class="l">Netto cashflow p/maand (nu)</div><div class="v" id="t_cfm">–</div></div>
+          <div class="stat"><div class="l">Maandlast aan verkoper</div><div class="v" id="t_maandlast">–</div></div>
+        </div>
+        <div style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px">
+          <table id="tontable" style="width:100%;border-collapse:collapse;font-size:13px"></table>
+        </div>
+      </div>
+      <div class="card">
         <h3>Wat krijgt de verkoper?</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
           <div class="stat"><div class="l">Jouw deal (totaal)</div><div class="v" id="o_deal">–</div></div>
@@ -207,12 +224,14 @@
 </div>
 <script>
 (function(){
-  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc","d_bv","d_houden","d_afschrijving","d_vpb","d_box2"];
+  var ids=["d_norm","d_bod","d_rente","d_vorm","d_looptijd","d_huur","d_groei","d_ovb","d_notaris","d_service","d_onderhoud","d_leeg","d_rspct","d_rsjaren","d_disc","d_bv","d_houden","d_afschrijving","d_vpb","d_box2","d_schaal"];
   var KEY="pandjes_calc_v3";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function val(id){return document.getElementById(id).value;}
   function s(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
-  function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
+  var S=1;
+  function eurRaw(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
+  function eur(n){return eurRaw(n*S);}
   function pct(n){return isFinite(n)?n.toFixed(1)+" %":"–";}
   function tone(id,ok){var e=document.getElementById(id);if(!e)return;e.classList.toggle("good",ok);e.classList.toggle("bad",!ok);}
 
@@ -228,6 +247,7 @@
     var bvMode=document.getElementById("d_bv").checked;
     var houden=document.getElementById("d_houden").checked;
     var afschrijving=g("d_afschrijving"), vpbRate=g("d_vpb")/100, box2Rate=g("d_box2")/100;
+    var schaal=g("d_schaal"); S=(bod>0)?schaal/bod:1;
 
     var ovbEur=bod*ovbP, inleg=ovbEur+notaris, totInvest=bod+ovbEur+notaris;
 
@@ -276,8 +296,8 @@
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Netto p/jr</th>'
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Cumul. cash</th>'
       +'<th style="text-align:right;padding:6px 6px;font-weight:600">Incl. pand</th></tr>';
-    var tbody="", cum=-inleg, cumNW=-inleg, verlies=0, prevRest=bod;
-    var huurTot=0, lastenTot=0, vpbTot=0;
+    var tbody="", cum=-inleg, verlies=0, prevRest=bod, cumAtH=0;
+    var huurTot=0, lastenTot=0, vpbTot=0, yearNet=[];
     for(var yy=1;yy<=horizon;yy++){
       var fy=gf(yy);
       var rY=huurStart*fy*12, sY=serviceM*12*fy, oY=onderhoud*fy, lY=rY*leeg;
@@ -297,9 +317,11 @@
         if(belast>0){vpb=belast*vpbRate; verlies=0;} else {verlies=-belast;}
       }
       var nYat=nY-vpb;
-      cum+=nYat; cumNW+=nYat;
-      if(vorm==="aflossingsvrij"&&yy===looptijd){cumNW-=bod;}
-      var netWorth=cumNW+(pandWaarde-restY);
+      cum+=nYat;
+      if(vorm==="aflossingsvrij"&&yy===looptijd){cum-=bod;}
+      var netWorth=cum+(pandWaarde-restY);
+      if(yy===H)cumAtH=cum;
+      yearNet.push(nYat);
       if(yy<=H){huurTot+=rY; lastenTot+=sY+oY+lY; vpbTot+=vpb;}
       var faseTxt,faseCol;
       if(yy<=looptijd){faseTxt="aflossen";faseCol="var(--muted)";}
@@ -314,7 +336,7 @@
         +'<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+wCol+'">'+eur(netWorth)+'</td></tr>';
     }
     document.getElementById("yeartable").innerHTML=th+tbody;
-    var nettoRit=huurTot-verkTot-lastenTot-inleg-vpbTot;
+    var nettoRit=cumAtH;
     var over=nettoRit+pandWaarde;
     var box2=(over>0)?over*box2Rate:0;
     var naBox2=over-box2;
@@ -372,6 +394,28 @@
     if(uitkeren)s("b_box2v",eur(naBox2)+"  (na "+eur(box2)+" box 2)");
     s("b_result",uitkeren?eur(naBox2):eur(over));
     tone("b_result_stat",(uitkeren?naBox2:over)>=0);
+
+    s("d_schaal_out",eurRaw(schaal));
+    s("d_schaal_units","≈ "+Math.round(schaal/bod)+"× de basisdeal");
+    s("t_cfm",eur(nettoM)); tone("t_cfm_stat",nettoM>=0);
+    s("t_maandlast",eur(maandlast));
+    var tth='<tr style="position:sticky;top:0;background:var(--soft)">'
+      +'<th style="text-align:left;padding:6px 8px;font-weight:600">Jaar</th>'
+      +'<th style="text-align:left;padding:6px 4px;font-weight:600">Fase</th>'
+      +'<th style="text-align:right;padding:6px 8px;font-weight:600">Netto p/mnd</th></tr>';
+    var ttb="";
+    for(var ty=1;ty<=yearNet.length;ty++){
+      var mpt=yearNet[ty-1]/12;
+      var ft,fc;
+      if(ty<=looptijd){ft="aflossen";fc="var(--muted)";}
+      else if(ty<=looptijd+rsJaren){ft="staartje";fc="var(--warn)";}
+      else{ft="vrij";fc="var(--good)";}
+      ttb+='<tr style="border-top:1px solid var(--line)">'
+        +'<td style="padding:6px 8px">'+ty+'</td>'
+        +'<td style="padding:6px 4px;color:'+fc+';font-size:11px">'+ft+'</td>'
+        +'<td style="padding:6px 8px;text-align:right;font-weight:600;color:'+(mpt>=0?"var(--good)":"var(--bad)")+'">'+(mpt>=0?"+ ":"− ")+eur(Math.abs(mpt))+'</td></tr>';
+    }
+    document.getElementById("tontable").innerHTML=tth+ttb;
 
     saveState();
   }
