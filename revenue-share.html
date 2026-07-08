@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revenue-share dealcalculator</title>
+<style>
+  :root{color-scheme:light;
+    --bg:#f4f6f8;--card:#fff;--ink:#16202b;--muted:#5f6b78;--line:#e4e9ee;
+    --accent:#ee7d00;--fundabar:#ff9b21;--soft:#fff4e3;
+    --good:#15803d;--goodbg:#e7f6ec;--bad:#b91c1c;--badbg:#fdeaea;--warn:#b45309;--warnbg:#fdf3e5;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;padding:20px}
+  .wrap{max-width:1240px;margin:0 auto}
+  .fundabar{background:var(--fundabar);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .fundalogo{background:#fff;color:#0a6ebd;font-weight:800;font-size:20px;letter-spacing:-.5px;padding:3px 12px 5px;border-radius:8px;line-height:1}
+  .fundabar .bt{color:#fff;font-size:15px;font-weight:700}
+  .disc{font-size:11px;color:var(--muted);margin:0 0 8px;font-style:italic}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .card+.card{margin-top:16px}
+  .card h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 10px;font-weight:600}
+  label{display:block;font-size:12px;color:var(--muted);margin:9px 0 3px}
+  input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;color:var(--ink);background:#fff}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+  .r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sl{display:flex;align-items:center;gap:10px}
+  .sl input[type=range]{flex:1;accent-color:var(--accent)}
+  .grid{display:grid;grid-template-columns:330px 1fr;gap:16px;align-items:start}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .stat{background:var(--soft);border-radius:9px;padding:11px 12px}
+  .stat .l{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:20px;font-weight:700}
+  .stat .r{font-size:11px;color:var(--muted)}
+  .stat.good{background:var(--goodbg)} .stat.good .v{color:var(--good)}
+  .stat.bad{background:var(--badbg)} .stat.bad .v{color:var(--bad)}
+  .ln{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .ln:last-child{border-bottom:none}.ln .k{color:var(--muted)}.ln .v{font-weight:600;font-variant-numeric:tabular-nums}
+  .bod{background:var(--soft);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.6;margin-top:8px}
+  .chartbox{position:relative;height:260px;margin-top:6px}
+  .tablewrap{max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th{position:sticky;top:0;background:var(--soft);text-align:right;padding:6px 8px;font-weight:600}
+  th:first-child,td:first-child{text-align:left}
+  td{text-align:right;padding:5px 8px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .foot{color:var(--muted);font-size:12px;margin-top:16px;line-height:1.6}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="fundabar"><span class="fundalogo">funda</span><span class="bt">Revenue-share dealcalculator — twee-traps</span></div>
+  <p class="disc">Onafhankelijke rekentool — niet van Funda. Geen fiscaal of juridisch advies; laat een accountant en notaris het bevestigen vóór je biedt.</p>
+  <p class="sub">Geen geld vooraf: de verkoper krijgt een % van de netto huur. Fase 1: 75% tot 2× de vraagprijs is uitgekeerd, daarna fase 2: 50% levenslang tot verkoop. Bij 3× uitgekeerd mag je verkopen.</p>
+
+  <div class="card" style="border-color:var(--accent);margin-bottom:16px">
+    <label style="font-weight:700;color:var(--ink);font-size:14px">Portefeuille — aantal panden: <span id="o_n" style="color:var(--accent)"></span> <span id="o_tot" style="color:var(--muted);font-weight:400;font-size:12px"></span></label>
+    <div class="sl"><input type="range" id="p_n" min="1" max="200" step="1" value="1"><input type="number" id="p_nnum" value="1" step="1" style="width:110px;flex:none"></div>
+    <div class="disc" style="margin:6px 0 0">Alle euro-bedragen zijn portefeuille-totalen (× aantal panden). Per-pand staat er tussen haakjes bij.</div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h3>De deal</h3>
+        <div class="r2">
+          <div><label>Fase 1 share (%)</label><input type="number" id="i_f1" value="75" step="1"></div>
+          <div><label>Fase 2 share (%)</label><input type="number" id="i_f2" value="50" step="1"></div>
+        </div>
+        <div class="r2">
+          <div><label>Omslag (× vraagprijs)</label><input type="number" id="i_omslag" value="2" step="0.1"></div>
+          <div><label>Verkoopdrempel (× prijs)</label><input type="number" id="i_verkoopx" value="3" step="0.1"></div>
+        </div>
+        <label>Verkoopjaar (looptijd share)</label><input type="number" id="i_verkoopjaar" value="40" step="1">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600;margin-top:10px"><input type="checkbox" id="i_aftrek" checked style="width:auto"> Revenue share aftrekbaar voor vpb</label>
+      </div>
+      <div class="card">
+        <h3>Pand &amp; kosten</h3>
+        <div class="r2">
+          <div><label>Vraagprijs per pand (€)</label><input type="number" id="i_prijs" value="15500"></div>
+          <div><label>Huur per maand nu (€)</label><input type="number" id="i_huur" value="105"></div>
+        </div>
+        <label>Jaarlijkse groei huur + waarde (%)</label><input type="number" id="i_groei" value="3" step="0.1">
+        <div class="r2">
+          <div><label>Servicekosten p/mnd (€)</label><input type="number" id="i_service" value="18"></div>
+          <div><label>Onderhoud p/jaar (€)</label><input type="number" id="i_onderhoud" value="100"></div>
+        </div>
+        <label>Leegstand (% van huur)</label><input type="number" id="i_leeg" value="5" step="0.5">
+      </div>
+      <div class="card">
+        <h3>Belasting &amp; kosten</h3>
+        <div class="r2">
+          <div><label>Vpb (%)</label><input type="number" id="i_vpb" value="19" step="0.1"></div>
+          <div><label>Disconto (%)</label><input type="number" id="i_disc" value="4" step="0.5"></div>
+        </div>
+        <div class="r2">
+          <div><label>Overdrachtsbel. (%)</label><input type="number" id="i_ovb" value="10.4" step="0.1"></div>
+          <div><label>Notaris per pand (€)</label><input type="number" id="i_notaris" value="750"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>Jouw kant</h3>
+        <div class="stats">
+          <div class="stat good"><div class="l">Cashflow maand 1</div><div class="v" id="o_cf1">–</div><div class="r" id="o_cf1r"></div></div>
+          <div class="stat"><div class="l">Laagste maand ooit</div><div class="v" id="o_low">–</div><div class="r" id="o_lowr"></div></div>
+          <div class="stat"><div class="l">Cashflow na omslag</div><div class="v" id="o_cfna">–</div><div class="r" id="o_cfnar"></div></div>
+          <div class="stat"><div class="l">Omslagjaar (75→50%)</div><div class="v" id="o_omslag">–</div></div>
+          <div class="stat"><div class="l">Mag verkopen (3×)</div><div class="v" id="o_verk">–</div></div>
+        </div>
+        <div style="margin-top:10px">
+          <div class="ln"><span class="k">Netto huur nu</span><span class="v" id="o_nettonu"></span></div>
+          <div class="ln"><span class="k">Share aan verkoper nu</span><span class="v" id="o_sharenu"></span></div>
+          <div class="ln"><span class="k">Omslagdrempel (2× vraagprijs)</span><span class="v" id="o_drempel"></span></div>
+          <div class="ln"><span class="k">Aankoopkosten (ovb + notaris, eigen zak)</span><span class="v" id="o_kosten"></span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Het bod naar de verkoper</h3>
+        <div class="stats">
+          <div class="stat"><div class="l">Lifetime totaal</div><div class="v" id="o_life">–</div><div class="r" id="o_lifer"></div></div>
+          <div class="stat"><div class="l">× vraagprijs</div><div class="v" id="o_lifex">–</div></div>
+          <div class="stat"><div class="l">Contante waarde (NPV)</div><div class="v" id="o_npv">–</div><div class="r" id="o_npvr"></div></div>
+          <div class="stat"><div class="l">Gemiddeld per maand</div><div class="v" id="o_gem">–</div><div class="r" id="o_gemr"></div></div>
+        </div>
+        <div class="bod" id="o_bodzin"></div>
+      </div>
+
+      <div class="card">
+        <h3>Vermogensopbouw</h3>
+        <div class="stats">
+          <div class="stat"><div class="l">Aflossing p/maand nu</div><div class="v" id="o_afl">–</div><div class="r" id="o_aflr"></div></div>
+          <div class="stat" id="o_verm_stat"><div class="l">Netto vermogen bij verkoop</div><div class="v" id="o_verm">–</div><div class="r" id="o_vermr"></div></div>
+          <div class="stat"><div class="l">Pandwaarde bij verkoop</div><div class="v" id="o_pw">–</div><div class="r" id="o_pwr"></div></div>
+          <div class="stat"><div class="l">Afgesproken prijs (2×)</div><div class="v" id="o_prijs2">–</div><div class="r" id="o_prijs2r"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Per maand: netto huur, share aan verkoper, jouw cashflow (per pand)</h3>
+    <div class="chartbox"><canvas id="chart1"></canvas></div>
+  </div>
+  <div class="r2" style="margin-top:16px;gap:16px">
+    <div class="card">
+      <h3>Cumulatief aan de verkoper (per pand)</h3>
+      <div class="chartbox"><canvas id="chart2"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>Pandwaarde + netto vermogen (per pand)</h3>
+      <div class="chartbox"><canvas id="chart3"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Jaartabel (per pand)</h3>
+    <div class="tablewrap"><table id="jaartabel"></table></div>
+  </div>
+
+  <p class="foot">Fiscale/juridische kanttekeningen: de aftrekbaarheid van de share is een grijs gebied — ziet de fiscus 'm als deel van de koopprijs (niet aftrekbaar), dan betaal je vpb over de héle netto huur en halveert je cashflow (zet de toggle uit om dit te zien). De 2×/gekapitaliseerde stroom kan als koopsom worden gezien voor de overdrachtsbelasting. Leg de share-verplichting en de minimale aflossing vast via hypotheek/pandrecht bij de notaris. Geen fiscaal of juridisch advies.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<script>
+(function(){
+  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_vpb","i_disc","i_ovb","i_notaris","p_nnum"];
+  var KEY="revshare_v1";
+  function g(id){return parseFloat(document.getElementById(id).value)||0;}
+  function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
+  function s(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
+  var c1,c2,c3;
+  function save(){try{var o={};ids.forEach(function(id){var e=document.getElementById(id);o[id]=(e.type==="checkbox")?e.checked:e.value;});localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  function load(){try{var o=JSON.parse(localStorage.getItem(KEY));if(!o)return;Object.keys(o).forEach(function(k){var e=document.getElementById(k);if(!e)return;if(e.type==="checkbox")e.checked=!!o[k];else e.value=o[k];});}catch(e){}}
+
+  function calc(){
+    var f1=g("i_f1")/100, f2=g("i_f2")/100, omslag=g("i_omslag"), verkoopx=g("i_verkoopx");
+    var verkoopjaar=Math.max(1,Math.round(g("i_verkoopjaar")));
+    var aftrek=document.getElementById("i_aftrek").checked;
+    var prijs=g("i_prijs"), huur=g("i_huur"), groei=g("i_groei")/100;
+    var service=g("i_service"), onderhoud=g("i_onderhoud"), leeg=g("i_leeg")/100;
+    var vpbR=g("i_vpb")/100, disc=g("i_disc")/100, ovbP=g("i_ovb")/100, notaris=g("i_notaris");
+    var N=Math.max(1,Math.round(g("p_nnum")));
+
+    var drempel=omslag*prijs, drempel3=verkoopx*prijs, afgesproken=drempel;
+    var aankoopkosten=ovbP*prijs+notaris;
+
+    var cum=0, cumPrev=0, omslagjaar=null, verkoopbaar=null, lifetime=0, npv=0;
+    var low=1e18, cf1=null, cfNa=null, aflNu=null, nettoNu=null, shareNu=null;
+    var labels=[], nettoArr=[], shareArr=[], cfArr=[], cumArr=[], pwArr=[], vermArr=[], rows=[];
+    for(var y=1;y<=verkoopjaar;y++){
+      var infl=Math.pow(1+groei,y-1);
+      var nm=huur*infl*(1-leeg)-service-onderhoud/12;
+      var base=Math.max(nm,0);
+      var shareJaar=0;
+      for(var mth=0;mth<12;mth++){
+        var pct=(cum<drempel)?f1:f2;
+        var sm=pct*base;
+        cum+=sm; shareJaar+=sm;
+      }
+      var nettoJaar=nm*12;
+      var belast=aftrek?(nettoJaar-shareJaar):nettoJaar;
+      var vpb=vpbR*Math.max(belast,0);
+      var cfJaar=nettoJaar-shareJaar-vpb;
+      var cfM=cfJaar/12;
+      if(y===1){cf1=cfM; nettoNu=nm; shareNu=shareJaar/12;}
+      if(cfM<low)low=cfM;
+      lifetime+=shareJaar; npv+=shareJaar/Math.pow(1+disc,y);
+      if(omslagjaar===null&&cum>=drempel){omslagjaar=y; cfNa=cfM;}
+      if(verkoopbaar===null&&cum>=drempel3)verkoopbaar=y;
+      var afl=Math.min(cum,afgesproken)-Math.min(cumPrev,afgesproken);
+      if(y===1)aflNu=afl/12;
+      var pandwaarde=prijs*Math.pow(1+groei,y);
+      var nogtebetalen=Math.max(0,afgesproken-cum);
+      var nettoverm=pandwaarde-nogtebetalen-aankoopkosten;
+      labels.push(y);
+      nettoArr.push(nm); shareArr.push(shareJaar/12); cfArr.push(cfM);
+      cumArr.push(cum); pwArr.push(pandwaarde); vermArr.push(nettoverm);
+      rows.push([y,nm,shareJaar/12,cfM,vpb,cum,nettoverm]);
+      cumPrev=cum;
+    }
+    if(cfNa===null)cfNa=cfArr[cfArr.length-1];
+    var lastVerm=vermArr[vermArr.length-1], lastPw=pwArr[pwArr.length-1];
+
+    function dual(id,val){s(id,eur(val*N)); s(id+"r",N>1?("€ "+Math.round(val).toLocaleString("nl-NL")+" p/pand"):"");}
+    s("o_n",N); s("o_tot",eur(N*prijs)+" totale vraagprijs");
+    dual("o_cf1",cf1); dual("o_low",low); dual("o_cfna",cfNa);
+    s("o_omslag",omslagjaar?("jaar "+omslagjaar):"n.v.t."); s("o_verk",verkoopbaar?("jaar "+verkoopbaar):"na "+verkoopjaar);
+    s("o_nettonu",eur(nettoNu*N)); s("o_sharenu",eur(shareNu*N)); s("o_drempel",eur(drempel*N)); s("o_kosten",eur(aankoopkosten*N));
+    dual("o_life",lifetime); s("o_lifex",(lifetime/prijs).toFixed(1)+"×"); dual("o_npv",npv); dual("o_gem",lifetime/(verkoopjaar*12));
+    dual("o_afl",aflNu); dual("o_verm",lastVerm); dual("o_pw",lastPw); dual("o_prijs2",afgesproken);
+    var vs=document.getElementById("o_verm_stat"); vs.classList.toggle("good",lastVerm>=0); vs.classList.toggle("bad",lastVerm<0);
+
+    s("o_bodzin","Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. Naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+".");
+
+    var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Cashflow /mnd</th><th>Vpb /jr</th><th>Cumulatief</th><th>Netto vermogen</th></tr>';
+    for(var i=0;i<rows.length;i++){var r=rows[i];
+      tb+='<tr><td>'+r[0]+'</td><td>'+eur(r[1]*N)+'</td><td>'+eur(r[2]*N)+'</td><td style="color:'+(r[3]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[3]*N)+'</td><td>'+eur(r[4]*N)+'</td><td>'+eur(r[5]*N)+'</td><td style="color:'+(r[6]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[6]*N)+'</td></tr>';}
+    document.getElementById("jaartabel").innerHTML=tb;
+
+    drawCharts(labels,nettoArr,shareArr,cfArr,cumArr,pwArr,vermArr,drempel,drempel3);
+    save();
+  }
+
+  function drawCharts(labels,netto,share,cf,cum,pw,verm,drempel,drempel3){
+    if(!window.Chart)return;
+    var gridc="rgba(0,0,0,0.06)";
+    var opt=function(){return {responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+      scales:{x:{grid:{color:gridc},ticks:{font:{size:10}}},y:{grid:{color:gridc},ticks:{font:{size:10},callback:function(v){return "€"+Math.round(v);}}}}};};
+    if(c1)c1.destroy(); if(c2)c2.destroy(); if(c3)c3.destroy();
+    c1=new Chart(document.getElementById("chart1"),{type:"line",data:{labels:labels,datasets:[
+      {label:"Netto huur /mnd",data:netto,borderColor:"#0a6ebd",backgroundColor:"transparent",tension:.2,pointRadius:0},
+      {label:"Share aan verkoper /mnd",data:share,borderColor:"#ee7d00",backgroundColor:"transparent",tension:.2,pointRadius:0},
+      {label:"Jouw cashflow /mnd",data:cf,borderColor:"#15803d",backgroundColor:"transparent",tension:.2,pointRadius:0}]},options:opt()});
+    var o2=opt();
+    c2=new Chart(document.getElementById("chart2"),{type:"line",data:{labels:labels,datasets:[
+      {label:"Cumulatief aan verkoper",data:cum,borderColor:"#ee7d00",backgroundColor:"rgba(238,125,0,0.08)",fill:true,tension:.2,pointRadius:0},
+      {label:"Omslag 2×",data:labels.map(function(){return drempel;}),borderColor:"#b45309",borderDash:[5,4],backgroundColor:"transparent",pointRadius:0},
+      {label:"Verkoop 3×",data:labels.map(function(){return drempel3;}),borderColor:"#b91c1c",borderDash:[5,4],backgroundColor:"transparent",pointRadius:0}]},options:o2});
+    c3=new Chart(document.getElementById("chart3"),{type:"line",data:{labels:labels,datasets:[
+      {label:"Pandwaarde",data:pw,borderColor:"#0a6ebd",backgroundColor:"transparent",tension:.2,pointRadius:0},
+      {label:"Netto vermogen",data:verm,borderColor:"#15803d",backgroundColor:"rgba(21,128,61,0.08)",fill:true,tension:.2,pointRadius:0}]},options:opt()});
+  }
+
+  ids.forEach(function(id){var e=document.getElementById(id);e.addEventListener("input",calc);e.addEventListener("change",calc);});
+  var rng=document.getElementById("p_n"), num=document.getElementById("p_nnum");
+  rng.addEventListener("input",function(){num.value=rng.value;calc();});
+  num.addEventListener("input",function(){rng.value=Math.min(Math.max(parseFloat(num.value)||1,1),200);});
+
+  load();
+  rng.value=Math.min(Math.max(g("p_nnum"),1),200);
+  calc();
+})();
+</script>
+</body>
+</html>
