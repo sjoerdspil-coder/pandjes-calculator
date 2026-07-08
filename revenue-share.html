@@ -87,6 +87,11 @@
           <div><label>Onderhoud p/jaar (€)</label><input type="number" id="i_onderhoud" value="100"></div>
         </div>
         <label>Leegstand (% van huur)</label><input type="number" id="i_leeg" value="5" step="0.5">
+        <div class="r2">
+          <div><label>Beheer (% van huur)</label><input type="number" id="i_beheer" value="0" step="0.5"></div>
+          <div><label>Overige lasten p/jaar (€)</label><input type="number" id="i_overig" value="400"></div>
+        </div>
+        <div class="disc" style="margin-top:2px">Overige = verzekering, VvE-reserve/groot onderhoud, OZB, BV-administratie (vast bedrag per jaar). Beheer is % van de huur.</div>
       </div>
       <div class="card">
         <h3>Belasting &amp; kosten</h3>
@@ -98,6 +103,9 @@
           <div><label>Overdrachtsbel. (%)</label><input type="number" id="i_ovb" value="10.4" step="0.1"></div>
           <div><label>Notaris per pand (€)</label><input type="number" id="i_notaris" value="750"></div>
         </div>
+        <label>Extra aankoopkosten (€) <span style="color:var(--muted)">— hypotheekakte, kadaster, juridisch/advies</span></label><input type="number" id="i_extra" value="2000">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600;margin-top:10px"><input type="checkbox" id="i_saletax" checked style="width:auto"> Vpb over verkoopwinst meerekenen</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600"><input type="checkbox" id="i_ovb2x" style="width:auto"> OVB over 2× i.p.v. vraagprijs (grondslagrisico)</label>
       </div>
     </div>
 
@@ -115,14 +123,15 @@
           <div class="ln"><span class="k">Netto huur nu</span><span class="v" id="o_nettonu"></span></div>
           <div class="ln"><span class="k">Share aan verkoper nu</span><span class="v" id="o_sharenu"></span></div>
           <div class="ln"><span class="k">Omslagdrempel (2× vraagprijs)</span><span class="v" id="o_drempel"></span></div>
-          <div class="ln"><span class="k">Aankoopkosten (ovb + notaris, eigen zak)</span><span class="v" id="o_kosten"></span></div>
+          <div class="ln"><span class="k">Aankoopkosten (ovb + notaris + extra, eigen zak)</span><span class="v" id="o_kosten"></span></div>
         </div>
       </div>
 
       <div class="card">
         <h3>Het bod naar de verkoper</h3>
         <div class="stats">
-          <div class="stat"><div class="l">Lifetime totaal</div><div class="v" id="o_life">–</div><div class="r" id="o_lifer"></div></div>
+          <div class="stat good"><div class="l">Minimaal gegarandeerd (2×)</div><div class="v" id="o_min">–</div><div class="r" id="o_minr"></div></div>
+          <div class="stat"><div class="l">Lifetime totaal (verwacht)</div><div class="v" id="o_life">–</div><div class="r" id="o_lifer"></div></div>
           <div class="stat"><div class="l">× vraagprijs</div><div class="v" id="o_lifex">–</div></div>
           <div class="stat"><div class="l">Contante waarde (NPV)</div><div class="v" id="o_npv">–</div><div class="r" id="o_npvr"></div></div>
           <div class="stat"><div class="l">Gemiddeld per maand</div><div class="v" id="o_gem">–</div><div class="r" id="o_gemr"></div></div>
@@ -168,7 +177,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
 (function(){
-  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_vpb","i_disc","i_ovb","i_notaris","p_nnum"];
+  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_beheer","i_overig","i_vpb","i_disc","i_ovb","i_notaris","i_extra","i_saletax","i_ovb2x","p_nnum"];
   var KEY="revshare_v1";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
@@ -184,17 +193,19 @@
     var prijs=g("i_prijs"), huur=g("i_huur"), groei=g("i_groei")/100;
     var service=g("i_service"), onderhoud=g("i_onderhoud"), leeg=g("i_leeg")/100;
     var vpbR=g("i_vpb")/100, disc=g("i_disc")/100, ovbP=g("i_ovb")/100, notaris=g("i_notaris");
+    var beheerPct=g("i_beheer")/100, overigJaar=g("i_overig"), extra=g("i_extra");
+    var saletax=document.getElementById("i_saletax").checked, ovb2x=document.getElementById("i_ovb2x").checked;
     var N=Math.max(1,Math.round(g("p_nnum")));
 
     var drempel=omslag*prijs, drempel3=verkoopx*prijs, afgesproken=drempel;
-    var aankoopkosten=ovbP*prijs+notaris;
+    var aankoopkosten=ovbP*(ovb2x?afgesproken:prijs)+notaris+extra;
 
     var cum=0, cumPrev=0, omslagjaar=null, verkoopbaar=null, lifetime=0, npv=0;
     var low=1e18, cf1=null, cfNa=null, aflNu=null, nettoNu=null, shareNu=null;
     var labels=[], nettoArr=[], shareArr=[], cfArr=[], cumArr=[], pwArr=[], vermArr=[], rows=[];
     for(var y=1;y<=verkoopjaar;y++){
       var infl=Math.pow(1+groei,y-1);
-      var nm=huur*infl*(1-leeg)-service-onderhoud/12;
+      var nm=huur*infl*(1-leeg)-service-onderhoud/12-beheerPct*huur*infl-overigJaar/12;
       var base=Math.max(nm,0);
       var shareJaar=0;
       for(var mth=0;mth<12;mth++){
@@ -216,7 +227,8 @@
       if(y===1)aflNu=afl/12;
       var pandwaarde=prijs*Math.pow(1+groei,y);
       var nogtebetalen=Math.max(0,afgesproken-cum);
-      var nettoverm=pandwaarde-nogtebetalen-aankoopkosten;
+      var vpbSale=saletax? vpbR*Math.max(pandwaarde-prijs,0):0;
+      var nettoverm=pandwaarde-nogtebetalen-aankoopkosten-vpbSale;
       labels.push(y);
       nettoArr.push(nm); shareArr.push(shareJaar/12); cfArr.push(cfM);
       cumArr.push(cum); pwArr.push(pandwaarde); vermArr.push(nettoverm);
@@ -231,11 +243,11 @@
     dual("o_cf1",cf1); dual("o_low",low); dual("o_cfna",cfNa);
     s("o_omslag",omslagjaar?("jaar "+omslagjaar):"n.v.t."); s("o_verk",verkoopbaar?("jaar "+verkoopbaar):"na "+verkoopjaar);
     s("o_nettonu",eur(nettoNu*N)); s("o_sharenu",eur(shareNu*N)); s("o_drempel",eur(drempel*N)); s("o_kosten",eur(aankoopkosten*N));
-    dual("o_life",lifetime); s("o_lifex",(lifetime/prijs).toFixed(1)+"×"); dual("o_npv",npv); dual("o_gem",lifetime/(verkoopjaar*12));
+    dual("o_min",afgesproken); dual("o_life",lifetime); s("o_lifex",(lifetime/prijs).toFixed(1)+"×"); dual("o_npv",npv); dual("o_gem",lifetime/(verkoopjaar*12));
     dual("o_afl",aflNu); dual("o_verm",lastVerm); dual("o_pw",lastPw); dual("o_prijs2",afgesproken);
     var vs=document.getElementById("o_verm_stat"); vs.classList.toggle("good",lastVerm>=0); vs.classList.toggle("bad",lastVerm<0);
 
-    s("o_bodzin","Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. Naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+".");
+    s("o_bodzin","Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. U bent contractueel gegarandeerd minimaal "+eur(afgesproken)+" (vastgelegd via hypotheek/pandrecht), en naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+".");
 
     var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Cashflow /mnd</th><th>Vpb /jr</th><th>Cumulatief</th><th>Netto vermogen</th></tr>';
     for(var i=0;i<rows.length;i++){var r=rows[i];
