@@ -249,9 +249,12 @@
 
     s("o_bodzin","Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. U bent contractueel gegarandeerd minimaal "+eur(afgesproken)+" (vastgelegd via hypotheek/pandrecht), en naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+".");
 
-    var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Cashflow /mnd</th><th>Vpb /jr</th><th>Cumulatief</th><th>Netto vermogen</th></tr>';
+    var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Cashflow /mnd</th><th>Cashflow /jr</th><th>Rend. op inleg</th><th>Cumulatief</th><th>Netto vermogen</th></tr>';
     for(var i=0;i<rows.length;i++){var r=rows[i];
-      tb+='<tr><td>'+r[0]+'</td><td>'+eur(r[1]*N)+'</td><td>'+eur(r[2]*N)+'</td><td style="color:'+(r[3]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[3]*N)+'</td><td>'+eur(r[4]*N)+'</td><td>'+eur(r[5]*N)+'</td><td style="color:'+(r[6]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[6]*N)+'</td></tr>';}
+      var cfJr=r[3]*12;
+      var rend=aankoopkosten>0? (cfJr/aankoopkosten*100) : 0;
+      var rendTxt=isFinite(rend)?(rend>=0?"+":"")+rend.toFixed(1)+"%":"–";
+      tb+='<tr><td>'+r[0]+'</td><td>'+eur(r[1]*N)+'</td><td>'+eur(r[2]*N)+'</td><td style="color:'+(r[3]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[3]*N)+'</td><td style="color:'+(cfJr>=0?"var(--good)":"var(--bad)")+'">'+eur(cfJr*N)+'</td><td style="font-weight:600;color:'+(rend>=0?"var(--good)":"var(--bad)")+'">'+rendTxt+'</td><td>'+eur(r[5]*N)+'</td><td style="color:'+(r[6]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[6]*N)+'</td></tr>';}
     document.getElementById("jaartabel").innerHTML=tb;
 
     drawCharts(labels,nettoArr,shareArr,cfArr,cumArr,pwArr,vermArr,drempel,drempel3);
