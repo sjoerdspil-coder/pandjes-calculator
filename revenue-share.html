@@ -157,11 +157,9 @@
 
       <div class="card" style="border-color:var(--accent)">
         <h3>Terugrekenen — welk bod kan de huur dragen?</h3>
-        <div class="disc" style="margin:-4px 0 8px">Niet de vraagprijs bepaalt wat een pand waard is, maar de huur. Hieronder reken ik terug: hoeveel mag je maximaal bieden om binnen X jaar Y× de koopsom te hebben afgelost uit de huur? Bedragen zijn per pand.</div>
-        <div class="r2">
-          <div><label>Doel: afgelost binnen (jaar)</label><input type="number" id="i_doeljaren" value="15" step="1"></div>
-          <div><label>Doel: × de koopsom afgelost</label><input type="number" id="i_doelmult" value="2" step="0.1"></div>
-        </div>
+        <div class="disc" style="margin:-4px 0 8px">Niet de vraagprijs bepaalt wat een pand waard is, maar de huur. Vul alleen in binnen hoeveel jaar je klaar wilt zijn — de tool pakt automatisch je deal erbij (fase 1 tot de omslag, dan fase 2 tot de cap) en rekent terug wat je maximaal mag bieden. Bedragen zijn per pand.</div>
+        <label>Doel: volledig afgelost binnen (jaar)</label><input type="number" id="i_doeljaren" value="15" step="1">
+        <div id="o_fasesplit" class="disc" style="margin-top:6px"></div>
         <div class="stats" style="margin-top:12px">
           <div class="stat good"><div class="l">Maximaal bod</div><div class="v" id="o_bod">–</div><div class="r">om je doel te halen</div></div>
           <div class="stat"><div class="l">Verkoper ontvangt dan</div><div class="v" id="o_bodtot">–</div><div class="r" id="o_bodtotr"></div></div>
@@ -200,7 +198,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
 (function(){
-  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_cap","i_doeljaren","i_doelmult","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_beheer","i_overig","i_vpb","i_disc","i_ovb","i_notaris","i_extra","i_saletax","i_ovb2x","i_verplcap","p_nnum"];
+  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_cap","i_doeljaren","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_beheer","i_overig","i_vpb","i_disc","i_ovb","i_notaris","i_extra","i_saletax","i_ovb2x","i_verplcap","p_nnum"];
   var KEY="revshare_v1";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
@@ -281,7 +279,8 @@
     s("o_totrend",(totRend>=0?"+":"")+Math.round(totRend)+"%");
 
     // --- Terugrekenen: welk bod kan de huur dragen? ---
-    var doelJaren=Math.max(1,Math.round(g("i_doeljaren"))), doelMult=g("i_doelmult");
+    var doelJaren=Math.max(1,Math.round(g("i_doeljaren")));
+    var doelMult=verkoopx;
     function simShare(P,Nj,wantNpv){
       var dr=omslag*P, capB=verkoopx*P, c=0, npvAcc=0;
       for(var ya=1;ya<=Nj;ya++){
@@ -304,6 +303,26 @@
       for(var kk=0;kk<80;kk++){var mid2=(lo2+hi2)/2; if(simShare(mid2,doelJaren,false)>=doelMult*mid2) lo2=mid2; else hi2=mid2;}
       bodMax=lo2;
     }
+    function omslagJaarBij(P,Nj){
+      var dr=omslag*P, capB=verkoopx*P, c=0;
+      for(var yb=1;yb<=Nj;yb++){
+        var ib=Math.pow(1+groei,yb-1);
+        var nb=huur*ib*(1-leeg)-service*ib-onderhoud*ib/12-beheerPct*huur*ib-overigJaar*ib/12;
+        var bb=Math.max(nb,0);
+        for(var mb=0;mb<12;mb++){
+          var pb=(capOn&&c>=capB)?0:((c<dr)?f1:f2);
+          var sb=pb*bb;
+          if(capOn&&c+sb>capB)sb=Math.max(0,capB-c);
+          c+=sb;
+        }
+        if(c>=dr)return yb;
+      }
+      return null;
+    }
+    var oj=omslagJaarBij(bodMax,doelJaren);
+    s("o_fasesplit", (doelMult>omslag && oj)
+      ? ("Fase 1 ("+g("i_f1")+"% van de huur) loopt tot jaar "+oj+" — dan is "+omslag+"× betaald. Daarna fase 2 ("+g("i_f2")+"%) tot jaar "+doelJaren+". Beide fases zitten in de berekening.")
+      : ("Je doel ("+doelMult+"×) ligt op of onder de omslag ("+omslag+"×), dus je zit de héle periode in fase 1 ("+g("i_f1")+"%). Fase 2 telt dan niet mee."));
     var bodTot=doelMult*bodMax;
     var bodNpv=simShare(bodMax,doelJaren,true);
     var bodKosten=ovbP*(ovb2x?verkoopx*bodMax:bodMax)+notaris+extra;
