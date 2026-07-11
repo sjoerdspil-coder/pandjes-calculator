@@ -52,7 +52,7 @@
 <div class="wrap">
   <div class="fundabar"><span class="fundalogo">funda</span><span class="bt">Revenue-share dealcalculator — twee-traps</span></div>
   <p class="disc">Onafhankelijke rekentool — niet van Funda. Geen fiscaal of juridisch advies; laat een accountant en notaris het bevestigen vóór je biedt.</p>
-  <p class="sub">Geen geld vooraf: de verkoper krijgt een % van de netto huur. Fase 1: 75% tot 2× de vraagprijs is uitgekeerd, daarna fase 2: 50% levenslang tot verkoop. Bij 3× uitgekeerd mag je verkopen.</p>
+  <p class="sub">Geen geld vooraf: de verkoper krijgt een % van de netto huur. Fase 1: 75% tot 2× de vraagprijs is uitgekeerd (gegarandeerd minimum), daarna fase 2: 50% tot in totaal 3× is uitgekeerd — dan stopt de afdracht (cap) en mag je verkopen. Duidelijk begin én einde voor de verkoper.</p>
 
   <div class="card" style="border-color:var(--accent);margin-bottom:16px">
     <label style="font-weight:700;color:var(--ink);font-size:14px">Portefeuille — aantal panden: <span id="o_n" style="color:var(--accent)"></span> <span id="o_tot" style="color:var(--muted);font-weight:400;font-size:12px"></span></label>
@@ -70,8 +70,9 @@
         </div>
         <div class="r2">
           <div><label>Omslag (× vraagprijs)</label><input type="number" id="i_omslag" value="2" step="0.1"></div>
-          <div><label>Verkoopdrempel (× prijs)</label><input type="number" id="i_verkoopx" value="3" step="0.1"></div>
+          <div><label>Cap / mag verkopen (× prijs)</label><input type="number" id="i_verkoopx" value="3" step="0.1"></div>
         </div>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600;margin-top:8px"><input type="checkbox" id="i_cap" checked style="width:auto"> Share stopt bij de cap (anders levenslang)</label>
         <label>Verkoopjaar (looptijd share)</label><input type="number" id="i_verkoopjaar" value="40" step="1">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600;margin-top:10px"><input type="checkbox" id="i_aftrek" checked style="width:auto"> Revenue share aftrekbaar voor vpb</label>
       </div>
@@ -117,7 +118,7 @@
           <div class="stat"><div class="l">Laagste maand ooit</div><div class="v" id="o_low">–</div><div class="r" id="o_lowr"></div></div>
           <div class="stat"><div class="l">Cashflow na omslag</div><div class="v" id="o_cfna">–</div><div class="r" id="o_cfnar"></div></div>
           <div class="stat"><div class="l">Omslagjaar (75→50%)</div><div class="v" id="o_omslag">–</div></div>
-          <div class="stat"><div class="l">Mag verkopen (3×)</div><div class="v" id="o_verk">–</div></div>
+          <div class="stat"><div class="l">Cap bereikt / mag verkopen</div><div class="v" id="o_verk">–</div></div>
         </div>
         <div style="margin-top:10px">
           <div class="ln"><span class="k">Netto huur nu</span><span class="v" id="o_nettonu"></span></div>
@@ -146,6 +147,7 @@
           <div class="stat" id="o_verm_stat"><div class="l">Netto vermogen bij verkoop</div><div class="v" id="o_verm">–</div><div class="r" id="o_vermr"></div></div>
           <div class="stat"><div class="l">Pandwaarde bij verkoop</div><div class="v" id="o_pw">–</div><div class="r" id="o_pwr"></div></div>
           <div class="stat"><div class="l">Afgesproken prijs (2×)</div><div class="v" id="o_prijs2">–</div><div class="r" id="o_prijs2r"></div></div>
+          <div class="stat good"><div class="l">Totaal rend. op inleg (cash + afbetaling)</div><div class="v" id="o_totrend">–</div><div class="r">bij verkoopjaar</div></div>
         </div>
       </div>
     </div>
@@ -167,7 +169,8 @@
   </div>
 
   <div class="card" style="margin-top:16px">
-    <h3>Jaartabel (per pand)</h3>
+    <h3>Jaartabel</h3>
+    <div class="disc" style="margin:-4px 0 6px">Rendementen zijn t.o.v. je eigen inleg (de aankoopkosten — je enige eigen uitgave). <b>Cash rend. /jr</b> = de cashflow van dát jaar. <b>Afbetalingsrend. /jr</b> = de afbetaling van dát jaar (het deel van de share dat jouw afgesproken prijs aflost — vermogen dat je vrijspeelt zonder eigen geld). <b>Cumulatief rend. /jr</b> = alles tot dan toe (cash + afbetaling) opgeteld en gedeeld door het aantal jaren — enkelvoudig, niet samengesteld.</div>
     <div class="tablewrap"><table id="jaartabel"></table></div>
   </div>
 
@@ -177,7 +180,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
 (function(){
-  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_beheer","i_overig","i_vpb","i_disc","i_ovb","i_notaris","i_extra","i_saletax","i_ovb2x","p_nnum"];
+  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_cap","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_beheer","i_overig","i_vpb","i_disc","i_ovb","i_notaris","i_extra","i_saletax","i_ovb2x","p_nnum"];
   var KEY="revshare_v1";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
@@ -190,6 +193,7 @@
     var f1=g("i_f1")/100, f2=g("i_f2")/100, omslag=g("i_omslag"), verkoopx=g("i_verkoopx");
     var verkoopjaar=Math.max(1,Math.round(g("i_verkoopjaar")));
     var aftrek=document.getElementById("i_aftrek").checked;
+    var capOn=document.getElementById("i_cap").checked;
     var prijs=g("i_prijs"), huur=g("i_huur"), groei=g("i_groei")/100;
     var service=g("i_service"), onderhoud=g("i_onderhoud"), leeg=g("i_leeg")/100;
     var vpbR=g("i_vpb")/100, disc=g("i_disc")/100, ovbP=g("i_ovb")/100, notaris=g("i_notaris");
@@ -200,7 +204,7 @@
     var drempel=omslag*prijs, drempel3=verkoopx*prijs, afgesproken=drempel;
     var aankoopkosten=ovbP*(ovb2x?afgesproken:prijs)+notaris+extra;
 
-    var cum=0, cumPrev=0, omslagjaar=null, verkoopbaar=null, lifetime=0, npv=0;
+    var cum=0, cumPrev=0, omslagjaar=null, verkoopbaar=null, lifetime=0, npv=0, cumCF=0;
     var low=1e18, cf1=null, cfNa=null, aflNu=null, nettoNu=null, shareNu=null;
     var labels=[], nettoArr=[], shareArr=[], cfArr=[], cumArr=[], pwArr=[], vermArr=[], rows=[];
     for(var y=1;y<=verkoopjaar;y++){
@@ -209,8 +213,9 @@
       var base=Math.max(nm,0);
       var shareJaar=0;
       for(var mth=0;mth<12;mth++){
-        var pct=(cum<drempel)?f1:f2;
+        var pct=(capOn&&cum>=drempel3)?0:((cum<drempel)?f1:f2);
         var sm=pct*base;
+        if(capOn&&cum+sm>drempel3)sm=Math.max(0,drempel3-cum);
         cum+=sm; shareJaar+=sm;
       }
       var nettoJaar=nm*12;
@@ -232,7 +237,9 @@
       labels.push(y);
       nettoArr.push(nm); shareArr.push(shareJaar/12); cfArr.push(cfM);
       cumArr.push(cum); pwArr.push(pandwaarde); vermArr.push(nettoverm);
-      rows.push([y,nm,shareJaar/12,cfM,vpb,cum,nettoverm]);
+      cumCF+=cfJaar;
+      var cumAfl=Math.min(cum,afgesproken);
+      rows.push([y,nm,shareJaar/12,cfM,vpb,cum,nettoverm,cumCF,cumAfl,afl]);
       cumPrev=cum;
     }
     if(cfNa===null)cfNa=cfArr[cfArr.length-1];
@@ -245,16 +252,31 @@
     s("o_nettonu",eur(nettoNu*N)); s("o_sharenu",eur(shareNu*N)); s("o_drempel",eur(drempel*N)); s("o_kosten",eur(aankoopkosten*N));
     dual("o_min",afgesproken); dual("o_life",lifetime); s("o_lifex",(lifetime/prijs).toFixed(1)+"×"); dual("o_npv",npv); dual("o_gem",lifetime/(verkoopjaar*12));
     dual("o_afl",aflNu); dual("o_verm",lastVerm); dual("o_pw",lastPw); dual("o_prijs2",afgesproken);
+    var totRend=aankoopkosten>0?((cumCF+Math.min(cum,afgesproken))/aankoopkosten*100):0;
+    s("o_totrend",(totRend>=0?"+":"")+Math.round(totRend)+"%");
     var vs=document.getElementById("o_verm_stat"); vs.classList.toggle("good",lastVerm>=0); vs.classList.toggle("bad",lastVerm<0);
 
-    s("o_bodzin","Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. U bent contractueel gegarandeerd minimaal "+eur(afgesproken)+" (vastgelegd via hypotheek/pandrecht), en naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+".");
+    s("o_bodzin", capOn
+      ? ("Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% totdat u in totaal "+verkoopx+"× ("+eur(drempel3)+") heeft ontvangen — dán stopt de afdracht. U krijgt dus contractueel minimaal "+eur(afgesproken)+" (vastgelegd via hypotheek/pandrecht) en maximaal "+eur(drempel3)+", naar verwachting bereikt rond jaar "+(verkoopbaar?verkoopbaar:"—")+". Contante waarde vandaag: "+eur(npv)+" — flink meer dan uw vraagprijs van "+eur(prijs)+", en met een duidelijk begin en einde.")
+      : ("Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. U bent contractueel gegarandeerd minimaal "+eur(afgesproken)+" (vastgelegd via hypotheek/pandrecht), en naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+"."));
 
-    var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Cashflow /mnd</th><th>Cashflow /jr</th><th>Rend. op inleg</th><th>Cumulatief</th><th>Netto vermogen</th></tr>';
+    function pctT(v){return (v>=0?"+":"")+v.toFixed(0)+"%";}
+    function col(v){return v>=0?"var(--good)":"var(--bad)";}
+    var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Cashflow /mnd</th>'
+      +'<th>Cash rend. /jr</th><th>Afbetalingsrend. /jr</th><th>Cumulatief rend. /jr</th>'
+      +'<th>Afbetaald</th><th>Cum. verkoper</th><th>Netto vermogen</th></tr>';
     for(var i=0;i<rows.length;i++){var r=rows[i];
-      var cfJr=r[3]*12;
-      var rend=aankoopkosten>0? (cfJr/aankoopkosten*100) : 0;
-      var rendTxt=isFinite(rend)?(rend>=0?"+":"")+rend.toFixed(1)+"%":"–";
-      tb+='<tr><td>'+r[0]+'</td><td>'+eur(r[1]*N)+'</td><td>'+eur(r[2]*N)+'</td><td style="color:'+(r[3]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[3]*N)+'</td><td style="color:'+(cfJr>=0?"var(--good)":"var(--bad)")+'">'+eur(cfJr*N)+'</td><td style="font-weight:600;color:'+(rend>=0?"var(--good)":"var(--bad)")+'">'+rendTxt+'</td><td>'+eur(r[5]*N)+'</td><td style="color:'+(r[6]>=0?"var(--good)":"var(--bad)")+'">'+eur(r[6]*N)+'</td></tr>';}
+      var rCash=aankoopkosten>0?(r[3]*12/aankoopkosten*100):0;
+      var rAfl=aankoopkosten>0?(r[9]/aankoopkosten*100):0;
+      var rCum=aankoopkosten>0?(((r[7]+r[8])/aankoopkosten*100)/r[0]):0;
+      tb+='<tr><td>'+r[0]+'</td><td>'+eur(r[1]*N)+'</td><td>'+eur(r[2]*N)+'</td>'
+        +'<td style="color:'+col(r[3])+'">'+eur(r[3]*N)+'</td>'
+        +'<td style="color:'+col(rCash)+'">'+(rCash>=0?"+":"")+rCash.toFixed(1)+'%</td>'
+        +'<td style="color:'+col(rAfl)+'">'+(rAfl>=0?"+":"")+rAfl.toFixed(1)+'%</td>'
+        +'<td style="font-weight:700;color:'+col(rCum)+'">'+(rCum>=0?"+":"")+rCum.toFixed(1)+'%</td>'
+        +'<td>'+eur(r[8]*N)+'</td>'
+        +'<td>'+eur(r[5]*N)+'</td>'
+        +'<td style="color:'+col(r[6])+'">'+eur(r[6]*N)+'</td></tr>';}
     document.getElementById("jaartabel").innerHTML=tb;
 
     drawCharts(labels,nettoArr,shareArr,cfArr,cumArr,pwArr,vermArr,drempel,drempel3);
