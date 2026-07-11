@@ -23,7 +23,8 @@
   label{display:block;font-size:12px;color:var(--muted);margin:9px 0 3px}
   input[type=number],select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:15px;color:var(--ink);background:#fff}
   input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
-  .r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .r2{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+  .r2 > div > label{min-height:32px;display:flex;align-items:flex-end;margin:9px 0 3px}
   .sl{display:flex;align-items:center;gap:10px}
   .sl input[type=range]{flex:1;accent-color:var(--accent)}
   .grid{display:grid;grid-template-columns:330px 1fr;gap:16px;align-items:start}
@@ -70,8 +71,9 @@
         </div>
         <div class="r2">
           <div><label>Omslag (× vraagprijs)</label><input type="number" id="i_omslag" value="2" step="0.1"></div>
-          <div><label>Cap / mag verkopen (× prijs)</label><input type="number" id="i_verkoopx" value="3" step="0.1"></div>
+          <div><label>Cap (× vraagprijs)</label><input type="number" id="i_verkoopx" value="3" step="0.1"></div>
         </div>
+        <div class="disc" style="margin:4px 0 0">Omslag = share zakt van fase 1 naar fase 2. Cap = share stopt en je mag verkopen.</div>
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600;margin-top:8px"><input type="checkbox" id="i_cap" checked style="width:auto"> Share stopt bij de cap (anders levenslang)</label>
         <label>Verkoopjaar (looptijd share)</label><input type="number" id="i_verkoopjaar" value="40" step="1">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--ink);font-weight:600;margin-top:10px"><input type="checkbox" id="i_aftrek" checked style="width:auto"> Revenue share aftrekbaar voor vpb</label>
