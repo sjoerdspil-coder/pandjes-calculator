@@ -47,6 +47,21 @@
   td{text-align:right;padding:5px 8px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
   .foot{color:var(--muted);font-size:12px;margin-top:16px;line-height:1.6}
   a{color:var(--accent)}
+  #printview{display:none}
+  @media print{
+    body{background:#fff;padding:0}
+    .wrap{display:none !important}
+    #printview{display:block !important;font-size:12pt;line-height:1.65;color:#000;max-width:100%}
+    #printview h1{font-size:16pt;margin:0 0 4px}
+    #printview .meta{font-size:10pt;color:#555;margin-bottom:24px}
+    #printview .brief{white-space:pre-wrap;margin-bottom:24px}
+    #printview table{width:100%;border-collapse:collapse;font-size:11pt;margin-top:8px}
+    #printview th,#printview td{text-align:left;padding:6px 8px;border-bottom:1px solid #ddd}
+    #printview td:last-child{text-align:right;font-weight:600}
+    #printview .kop{font-weight:700;margin:20px 0 4px;font-size:12pt}
+    #printview .klein{font-size:9pt;color:#666;margin-top:24px;line-height:1.5}
+    @page{margin:2cm}
+  }
 </style>
 </head>
 <body>
@@ -192,8 +207,29 @@
     <div class="tablewrap"><table id="jaartabel"></table></div>
   </div>
 
+  <div class="card" style="margin-top:16px;border-color:var(--accent)">
+    <h3>Bod-brief naar de verkoper</h3>
+    <div class="disc" style="margin:-4px 0 8px">De brief wordt gevuld met je live cijfers. Pas 'm aan naar je eigen woorden en druk 'm af als PDF (kies bij Bestemming: "Opslaan als PDF").</div>
+    <div class="r2" style="margin-bottom:10px">
+      <div><label>Aan (naam verkoper)</label><input type="text" id="br_naam" value="" placeholder="De heer/mevrouw ..." style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label>Object / adres</label><input type="text" id="br_object" value="" placeholder="Garagebox aan de ..." style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <div class="r2" style="margin-bottom:10px">
+      <div><label>Jouw naam</label><input type="text" id="br_van" value="" placeholder="Sjoerd ..." style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label>Contact (mail / telefoon)</label><input type="text" id="br_contact" value="" placeholder="mail@... / 06-..." style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <label>Brieftekst (pas aan naar je eigen stijl)</label>
+    <textarea id="br_tekst" style="width:100%;min-height:280px;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px;line-height:1.6;font-family:inherit;color:var(--ink)"></textarea>
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <button id="br_refresh" style="flex:1;padding:10px;border:1px solid var(--border,#e4e9ee);border-radius:8px;background:#fff;color:var(--ink);font-weight:600;cursor:pointer">Ververs met huidige cijfers</button>
+      <button id="br_print" style="flex:2;padding:10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;cursor:pointer">Bod-brief afdrukken / opslaan als PDF</button>
+    </div>
+  </div>
+
   <p class="foot">Fiscale/juridische kanttekeningen: de aftrekbaarheid van de share is een grijs gebied — ziet de fiscus 'm als deel van de koopprijs (niet aftrekbaar), dan betaal je vpb over de héle netto huur en halveert je cashflow (zet de toggle uit om dit te zien). De 2×/gekapitaliseerde stroom kan als koopsom worden gezien voor de overdrachtsbelasting. Leg de share-verplichting en de minimale aflossing vast via hypotheek/pandrecht bij de notaris. Geen fiscaal of juridisch advies.</p>
 </div>
+
+<div id="printview"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
@@ -203,7 +239,7 @@
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
   function s(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
-  var c1,c2,c3;
+  var c1,c2,c3,laatste={};
   function save(){try{var o={};ids.forEach(function(id){var e=document.getElementById(id);o[id]=(e.type==="checkbox")?e.checked:e.value;});localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
   function load(){try{var o=JSON.parse(localStorage.getItem(KEY));if(!o)return;Object.keys(o).forEach(function(k){var e=document.getElementById(k);if(!e)return;if(e.type==="checkbox")e.checked=!!o[k];else e.value=o[k];});}catch(e){}}
 
@@ -361,6 +397,10 @@
         +'<td style="color:'+col(r[6])+'">'+eur(r[6]*N)+'</td></tr>';}
     document.getElementById("jaartabel").innerHTML=tb;
 
+    laatste={prijs:prijs,huur:huur,f1:g("i_f1"),f2:g("i_f2"),omslag:omslag,capx:verkoopx,
+      drempel:drempel,cap:drempel3,lifetime:lifetime,npv:npv,verkoopbaar:verkoopbaar,
+      omslagjaar:omslagjaar,nettoNu:nettoNu,shareNu:shareNu,bodMax:bodMax,doelJaren:doelJaren,capOn:capOn};
+
     drawCharts(labels,nettoArr,shareArr,cfArr,cumArr,pwArr,vermArr,drempel,drempel3);
     save();
   }
@@ -391,9 +431,58 @@
   rng.addEventListener("input",function(){num.value=rng.value;calc();});
   num.addEventListener("input",function(){rng.value=Math.min(Math.max(parseFloat(num.value)||1,1),200);});
 
+  function briefTekst(){
+    var L=laatste;
+    var naam=document.getElementById("br_naam").value||"[naam verkoper]";
+    var obj=document.getElementById("br_object").value||"[het object]";
+    var van=document.getElementById("br_van").value||"[jouw naam]";
+    var ct=document.getElementById("br_contact").value||"[jouw contactgegevens]";
+    var x=(L.prijs>0?(L.lifetime/L.prijs).toFixed(1):"—");
+    return "Geachte "+naam+",\n\n"
+      +"Ik heb interesse in "+obj+" en doe u hierbij een voorstel. Het wijkt af van een gewoon bod, en ik leg u graag uit waarom dat voor u juist gunstiger uitpakt.\n\n"
+      +"Ik betaal u geen bedrag ineens. In plaats daarvan ontvangt u elke maand een deel van de huuropbrengst. Om te beginnen "+L.f1+"% van de netto huur, totdat u in totaal "+eur(L.drempel)+" heeft ontvangen — dat is "+L.omslag+"x uw vraagprijs. Daarna ontvangt u "+L.f2+"% van de huur, tot u in totaal "+eur(L.cap)+" heeft ontvangen. Op dat moment stopt de afdracht en is alles afgerond.\n\n"
+      +"Wat dit voor u betekent:\n\n"
+      +"U ontvangt gegarandeerd minimaal "+eur(L.drempel)+". Dat leggen we bij de notaris vast met een recht van hypotheek op het object, zodat u volledige zekerheid heeft. Kom ik mijn verplichtingen niet na, dan valt het object aan u terug.\n\n"
+      +"U ontvangt maximaal "+eur(L.cap)+". Er is dus een duidelijk begin en een duidelijk einde — geen open einde waar u niet meer uit komt.\n\n"
+      +"U krijgt een vast maandelijks inkomen in plaats van een bedrag ineens. Geen makelaarskosten, geen bezichtigingen, geen onderhandelingscircus. Ik neem het object over in de staat waarin het zich nu bevindt.\n\n"
+      +"Ter vergelijking: uw vraagprijs is "+eur(L.prijs)+". Mijn voorstel levert u naar verwachting "+eur(L.lifetime)+" op, ongeveer "+x+"x zoveel.\n\n"
+      +"Ik begrijp dat dit een ongebruikelijk voorstel is en licht het graag persoonlijk toe, geheel vrijblijvend. U kunt mij bereiken op "+ct+".\n\n"
+      +"Met vriendelijke groet,\n\n"+van;
+  }
+  function vulBrief(){document.getElementById("br_tekst").value=briefTekst();}
+  document.getElementById("br_refresh").addEventListener("click",function(){vulBrief();document.getElementById("br_tekst").dataset.touched="";});
+  ["br_naam","br_object","br_van","br_contact"].forEach(function(id){
+    document.getElementById(id).addEventListener("input",function(){
+      if(!document.getElementById("br_tekst").dataset.touched)vulBrief();
+    });
+  });
+  document.getElementById("br_tekst").addEventListener("input",function(){this.dataset.touched="1";});
+  document.getElementById("br_print").addEventListener("click",function(){
+    var L=laatste;
+    var d=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
+    var obj=document.getElementById("br_object").value||"";
+    var esc=function(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");};
+    document.getElementById("printview").innerHTML=
+       '<h1>Voorstel tot overname</h1>'
+      +'<div class="meta">'+(obj?esc(obj)+' &middot; ':'')+d+'</div>'
+      +'<div class="brief">'+esc(document.getElementById("br_tekst").value)+'</div>'
+      +'<div class="kop">Het voorstel in cijfers</div>'
+      +'<table>'
+      +'<tr><td>Uw vraagprijs</td><td>'+eur(L.prijs)+'</td></tr>'
+      +'<tr><td>Fase 1 &mdash; '+L.f1+'% van de netto huur, tot</td><td>'+eur(L.drempel)+' ('+L.omslag+'x)</td></tr>'
+      +'<tr><td>Fase 2 &mdash; '+L.f2+'% van de netto huur, tot</td><td>'+eur(L.cap)+' ('+L.capx+'x)</td></tr>'
+      +'<tr><td>Gegarandeerd minimum (notarieel vastgelegd)</td><td>'+eur(L.drempel)+'</td></tr>'
+      +'<tr><td>Maximum &mdash; daarna stopt de afdracht</td><td>'+eur(L.cap)+'</td></tr>'
+      +'<tr><td>Verwacht totaal dat u ontvangt</td><td>'+eur(L.lifetime)+'</td></tr>'
+      +'</table>'
+      +'<div class="klein">Dit is een vrijblijvend voorstel en geen bindende overeenkomst. De genoemde bedragen zijn gebaseerd op de huidige huuropbrengst en een aangenomen jaarlijkse indexatie; de werkelijke bedragen kunnen daarvan afwijken. Het gegarandeerde minimum wordt notarieel vastgelegd via een recht van hypotheek. Laat u zich vrijblijvend adviseren door uw eigen notaris of adviseur.</div>';
+    window.print();
+  });
+
   load();
   rng.value=Math.min(Math.max(g("p_nnum"),1),200);
   calc();
+  vulBrief();
 })();
 </script>
 </body>
