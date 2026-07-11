@@ -11,7 +11,7 @@
     --good:#15803d;--goodbg:#e7f6ec;--bad:#b91c1c;--badbg:#fdeaea;--warn:#b45309;--warnbg:#fdf3e5;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;padding:20px}
-  .wrap{max-width:1240px;margin:0 auto}
+  .wrap{max-width:1800px;margin:0 auto}
   .fundabar{background:var(--fundabar);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:6px}
   .fundalogo{background:#fff;color:#0a6ebd;font-weight:800;font-size:20px;letter-spacing:-.5px;padding:3px 12px 5px;border-radius:8px;line-height:1}
   .fundabar .bt{color:#fff;font-size:15px;font-weight:700}
@@ -172,7 +172,7 @@
 
   <div class="card" style="margin-top:16px">
     <h3>Jaartabel</h3>
-    <div class="disc" style="margin:-4px 0 6px">Rendementen zijn t.o.v. je eigen inleg (de aankoopkosten — je enige eigen uitgave). <b>Cash rend. /jr</b> = de cashflow van dát jaar. <b>Afbetalingsrend. /jr</b> = de afbetaling van dát jaar (het deel van de share dat jouw afgesproken prijs aflost — vermogen dat je vrijspeelt zonder eigen geld). <b>Cumulatief rend. /jr</b> = alles tot dan toe (cash + afbetaling) opgeteld en gedeeld door het aantal jaren — enkelvoudig, niet samengesteld.</div>
+    <div class="disc" style="margin:-4px 0 6px">Rendementen zijn t.o.v. je eigen inleg (de aankoopkosten — je enige eigen uitgave). <b>Cash rend. /jr</b> = de cashflow van dát jaar. <b>Afbetalingsrend. /jr</b> = de afbetaling van dát jaar (het deel van de share dat jouw afgesproken prijs aflost — vermogen dat je vrijspeelt zonder eigen geld). <b>Cumulatief rend. /jr</b> = alles tot dan toe (cash + afbetaling) opgeteld en gedeeld door het aantal jaren — enkelvoudig, niet samengesteld. <b>Eigen kosten /jr</b> = alle kosten die jij draagt in dat jaar (servicekosten, onderhoud, leegstand, beheer, overige lasten en vpb — dus exclusief de share aan de verkoper). <b>Totale eigen kosten</b> = die kosten cumulatief, startend bij je aankoopkosten.</div>
     <div class="tablewrap"><table id="jaartabel"></table></div>
   </div>
 
@@ -206,7 +206,7 @@
     var drempel=omslag*prijs, drempel3=verkoopx*prijs, afgesproken=drempel3;
     var aankoopkosten=ovbP*(ovb2x?afgesproken:prijs)+notaris+extra;
 
-    var cum=0, cumPrev=0, omslagjaar=null, verkoopbaar=null, lifetime=0, npv=0, cumCF=0;
+    var cum=0, cumPrev=0, omslagjaar=null, verkoopbaar=null, lifetime=0, npv=0, cumCF=0, cumKosten=aankoopkosten;
     var low=1e18, cf1=null, cfNa=null, aflNu=null, nettoNu=null, shareNu=null;
     var labels=[], nettoArr=[], shareArr=[], cfArr=[], cumArr=[], pwArr=[], vermArr=[], rows=[];
     for(var y=1;y<=verkoopjaar;y++){
@@ -241,7 +241,9 @@
       cumArr.push(cum); pwArr.push(pandwaarde); vermArr.push(nettoverm);
       cumCF+=cfJaar;
       var cumAfl=Math.min(cum,afgesproken);
-      rows.push([y,nm,shareJaar/12,cfM,vpb,cum,nettoverm,cumCF,cumAfl,afl]);
+      var kostenJr=(huur*infl*12-nettoJaar)+vpb;
+      cumKosten+=kostenJr;
+      rows.push([y,nm,shareJaar/12,cfM,vpb,cum,nettoverm,cumCF,cumAfl,afl,kostenJr,cumKosten]);
       cumPrev=cum;
     }
     if(cfNa===null)cfNa=cfArr[cfArr.length-1];
@@ -264,18 +266,20 @@
 
     function pctT(v){return (v>=0?"+":"")+v.toFixed(0)+"%";}
     function col(v){return v>=0?"var(--good)":"var(--bad)";}
-    var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Cashflow /mnd</th>'
+    var tb='<tr><th>Jaar</th><th>Netto huur /mnd</th><th>Share /mnd</th><th>Eigen kosten /jr</th><th>Cashflow /mnd</th>'
       +'<th>Cash rend. /jr</th><th>Afbetalingsrend. /jr</th><th>Cumulatief rend. /jr</th>'
-      +'<th>Afbetaald</th><th>Cum. verkoper</th><th>Netto vermogen</th></tr>';
+      +'<th>Totale eigen kosten</th><th>Afbetaald</th><th>Cum. verkoper</th><th>Netto vermogen</th></tr>';
     for(var i=0;i<rows.length;i++){var r=rows[i];
       var rCash=aankoopkosten>0?(r[3]*12/aankoopkosten*100):0;
       var rAfl=aankoopkosten>0?(r[9]/aankoopkosten*100):0;
       var rCum=aankoopkosten>0?(((r[7]+r[8])/aankoopkosten*100)/r[0]):0;
       tb+='<tr><td>'+r[0]+'</td><td>'+eur(r[1]*N)+'</td><td>'+eur(r[2]*N)+'</td>'
+        +'<td style="color:var(--bad)">'+eur(r[10]*N)+'</td>'
         +'<td style="color:'+col(r[3])+'">'+eur(r[3]*N)+'</td>'
         +'<td style="color:'+col(rCash)+'">'+(rCash>=0?"+":"")+rCash.toFixed(1)+'%</td>'
         +'<td style="color:'+col(rAfl)+'">'+(rAfl>=0?"+":"")+rAfl.toFixed(1)+'%</td>'
         +'<td style="font-weight:700;color:'+col(rCum)+'">'+(rCum>=0?"+":"")+rCum.toFixed(1)+'%</td>'
+        +'<td style="color:var(--bad)">'+eur(r[11]*N)+'</td>'
         +'<td>'+eur(r[8]*N)+'</td>'
         +'<td>'+eur(r[5]*N)+'</td>'
         +'<td style="color:'+col(r[6])+'">'+eur(r[6]*N)+'</td></tr>';}
