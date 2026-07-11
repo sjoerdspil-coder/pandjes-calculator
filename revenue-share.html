@@ -218,10 +218,15 @@
       <div><label>Jouw naam</label><input type="text" id="br_van" value="" placeholder="Sjoerd ..." style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px"></div>
       <div><label>Contact (mail / telefoon)</label><input type="text" id="br_contact" value="" placeholder="mail@... / 06-..." style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px"></div>
     </div>
-    <label>Brieftekst (pas aan naar je eigen stijl)</label>
+    <label>Schrijfstijl — vertel de AI hoe jij schrijft</label>
+    <textarea id="br_stijl" style="width:100%;min-height:90px;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px;line-height:1.6;font-family:inherit;color:var(--ink)">Zakelijk maar warm en persoonlijk. Korte, directe zinnen. Geen jargon, geen verkooppraat, geen loze superlatieven. Eerlijk en concreet: benoem ook wat er ongebruikelijk aan is. Spreek de verkoper met respect aan — hij laat mogelijk iets los waar hij aan gehecht is. Schrijf in lopende alinea's, geen opsommingstekens.</textarea>
+    <button id="br_ai" style="width:100%;margin-top:8px;padding:11px;border:none;border-radius:8px;background:#0a6ebd;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Laat AI de brief schrijven</button>
+    <div id="br_ai_status" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+
+    <label style="margin-top:12px">Brieftekst (bewerk vrij; dit gaat naar de PDF)</label>
     <textarea id="br_tekst" style="width:100%;min-height:280px;padding:12px;border:1px solid var(--line);border-radius:8px;font-size:14px;line-height:1.6;font-family:inherit;color:var(--ink)"></textarea>
     <div style="display:flex;gap:10px;margin-top:10px">
-      <button id="br_refresh" style="flex:1;padding:10px;border:1px solid var(--border,#e4e9ee);border-radius:8px;background:#fff;color:var(--ink);font-weight:600;cursor:pointer">Ververs met huidige cijfers</button>
+      <button id="br_refresh" style="flex:1;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-weight:600;cursor:pointer">Terug naar sjabloon</button>
       <button id="br_print" style="flex:2;padding:10px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-weight:700;font-size:15px;cursor:pointer">Bod-brief afdrukken / opslaan als PDF</button>
     </div>
   </div>
@@ -240,7 +245,8 @@
   function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
   function s(id,t){var e=document.getElementById(id);if(e)e.textContent=t;}
   var c1,c2,c3,laatste={};
-  function save(){try{var o={};ids.forEach(function(id){var e=document.getElementById(id);o[id]=(e.type==="checkbox")?e.checked:e.value;});localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  var brIds=["br_naam","br_object","br_van","br_contact","br_stijl"];
+  function save(){try{var o={};ids.forEach(function(id){var e=document.getElementById(id);o[id]=(e.type==="checkbox")?e.checked:e.value;});brIds.forEach(function(id){var e=document.getElementById(id);if(e)o[id]=e.value;});localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
   function load(){try{var o=JSON.parse(localStorage.getItem(KEY));if(!o)return;Object.keys(o).forEach(function(k){var e=document.getElementById(k);if(!e)return;if(e.type==="checkbox")e.checked=!!o[k];else e.value=o[k];});}catch(e){}}
 
   function calc(){
@@ -457,6 +463,56 @@
     });
   });
   document.getElementById("br_tekst").addEventListener("input",function(){this.dataset.touched="1";});
+  brIds.forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener("input",save);});
+
+  document.getElementById("br_ai").addEventListener("click",async function(){
+    var st=document.getElementById("br_ai_status");
+    if(!(window.cowork&&window.cowork.askClaude)){
+      st.textContent="AI-schrijven werkt alleen binnen de Cowork-app (daar draait het model). Op de openbare link gebruik je het sjabloon hieronder.";
+      return;
+    }
+    st.textContent="Claude schrijft je brief…";
+    var L=laatste;
+    var feiten={
+      naam_verkoper:document.getElementById("br_naam").value||"(onbekend)",
+      object:document.getElementById("br_object").value||"(het object)",
+      afzender:document.getElementById("br_van").value||"(afzender)",
+      contactgegevens:document.getElementById("br_contact").value||"(contact)",
+      vraagprijs_euro:Math.round(L.prijs),
+      fase1_percentage_van_netto_huur:L.f1,
+      fase2_percentage_van_netto_huur:L.f2,
+      omslag_multiple:L.omslag,
+      omslag_bedrag_euro:Math.round(L.drempel),
+      cap_multiple:L.capx,
+      cap_bedrag_euro:Math.round(L.cap),
+      gegarandeerd_minimum_euro:Math.round(L.drempel),
+      maximum_euro:Math.round(L.cap),
+      verwacht_totaal_euro:Math.round(L.lifetime),
+      netto_huur_per_maand_euro:Math.round(L.nettoNu),
+      afdracht_per_maand_nu_euro:Math.round(L.shareNu)
+    };
+    var stijl=document.getElementById("br_stijl").value;
+    var prompt="Schrijf een Nederlandse brief waarin de afzender een bod doet op een vastgoedobject van de verkoper. "
+      +"Gebruik UITSLUITEND de meegeleverde feiten en bedragen; verzin niets bij en noem geen bedragen die er niet staan. "
+      +"Leg het voorstel uit: de verkoper krijgt geen bedrag ineens, maar een percentage van de netto huur — eerst fase 1, tot hij het omslagbedrag heeft ontvangen, daarna fase 2, tot het cap-bedrag is bereikt; dan stopt de afdracht. "
+      +"Benoem wat het voor de verkoper betekent: een gegarandeerd minimum dat notarieel wordt vastgelegd met een recht van hypotheek op het object, een duidelijk maximum (dus een duidelijk einde), een maandelijks inkomen in plaats van een bedrag ineens, en geen makelaarskosten of bezichtigingen. "
+      +"Vergelijk het verwachte totaal met de vraagprijs. Sluit af met een uitnodiging voor een vrijblijvend gesprek, een groet en de naam van de afzender. "
+      +"Geef ALLEEN de brieftekst terug, zonder kopjes, zonder markdown, zonder toelichting.\n\n"
+      +"SCHRIJFSTIJL-INSTRUCTIES VAN DE AFZENDER (volg deze strikt):\n"+stijl;
+    try{
+      var r=await window.cowork.askClaude(prompt,[feiten]);
+      var txt="";
+      if(typeof r==="string")txt=r;
+      else if(r&&typeof r.text==="string")txt=r.text;
+      else if(r&&r.content&&r.content[0]&&r.content[0].text)txt=r.content[0].text;
+      else txt=String(r);
+      var ta=document.getElementById("br_tekst");
+      ta.value=txt.trim(); ta.dataset.touched="1";
+      st.textContent="Klaar. Pas 'm gerust nog aan — de PDF pakt wat hier staat.";
+    }catch(e){
+      st.textContent="Het schrijven lukte niet ("+(e&&e.message?e.message:"onbekend")+"). Gebruik het sjabloon hieronder.";
+    }
+  });
   document.getElementById("br_print").addEventListener("click",function(){
     var L=laatste;
     var d=new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"});
