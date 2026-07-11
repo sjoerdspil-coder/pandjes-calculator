@@ -148,7 +148,7 @@
           <div class="stat"><div class="l">Aflossing p/maand nu</div><div class="v" id="o_afl">–</div><div class="r" id="o_aflr"></div></div>
           <div class="stat" id="o_verm_stat"><div class="l">Netto vermogen bij verkoop</div><div class="v" id="o_verm">–</div><div class="r" id="o_vermr"></div></div>
           <div class="stat"><div class="l">Pandwaarde bij verkoop</div><div class="v" id="o_pw">–</div><div class="r" id="o_pwr"></div></div>
-          <div class="stat"><div class="l">Afgesproken prijs (2×)</div><div class="v" id="o_prijs2">–</div><div class="r" id="o_prijs2r"></div></div>
+          <div class="stat"><div class="l">Afgesproken prijs (cap)</div><div class="v" id="o_prijs2">–</div><div class="r" id="o_prijs2r"></div></div>
           <div class="stat good"><div class="l">Totaal rend. op inleg (cash + afbetaling)</div><div class="v" id="o_totrend">–</div><div class="r">bij verkoopjaar</div></div>
         </div>
       </div>
@@ -203,7 +203,7 @@
     var saletax=document.getElementById("i_saletax").checked, ovb2x=document.getElementById("i_ovb2x").checked;
     var N=Math.max(1,Math.round(g("p_nnum")));
 
-    var drempel=omslag*prijs, drempel3=verkoopx*prijs, afgesproken=drempel;
+    var drempel=omslag*prijs, drempel3=verkoopx*prijs, afgesproken=drempel3;
     var aankoopkosten=ovbP*(ovb2x?afgesproken:prijs)+notaris+extra;
 
     var cum=0, cumPrev=0, omslagjaar=null, verkoopbaar=null, lifetime=0, npv=0, cumCF=0;
@@ -252,15 +252,15 @@
     dual("o_cf1",cf1); dual("o_low",low); dual("o_cfna",cfNa);
     s("o_omslag",omslagjaar?("jaar "+omslagjaar):"n.v.t."); s("o_verk",verkoopbaar?("jaar "+verkoopbaar):"na "+verkoopjaar);
     s("o_nettonu",eur(nettoNu*N)); s("o_sharenu",eur(shareNu*N)); s("o_drempel",eur(drempel*N)); s("o_kosten",eur(aankoopkosten*N));
-    dual("o_min",afgesproken); dual("o_life",lifetime); s("o_lifex",(lifetime/prijs).toFixed(1)+"×"); dual("o_npv",npv); dual("o_gem",lifetime/(verkoopjaar*12));
+    dual("o_min",drempel); dual("o_life",lifetime); s("o_lifex",(lifetime/prijs).toFixed(1)+"×"); dual("o_npv",npv); dual("o_gem",lifetime/(verkoopjaar*12));
     dual("o_afl",aflNu); dual("o_verm",lastVerm); dual("o_pw",lastPw); dual("o_prijs2",afgesproken);
     var totRend=aankoopkosten>0?((cumCF+Math.min(cum,afgesproken))/aankoopkosten*100):0;
     s("o_totrend",(totRend>=0?"+":"")+Math.round(totRend)+"%");
     var vs=document.getElementById("o_verm_stat"); vs.classList.toggle("good",lastVerm>=0); vs.classList.toggle("bad",lastVerm<0);
 
     s("o_bodzin", capOn
-      ? ("Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% totdat u in totaal "+verkoopx+"× ("+eur(drempel3)+") heeft ontvangen — dán stopt de afdracht. U krijgt dus contractueel minimaal "+eur(afgesproken)+" (vastgelegd via hypotheek/pandrecht) en maximaal "+eur(drempel3)+", naar verwachting bereikt rond jaar "+(verkoopbaar?verkoopbaar:"—")+". Contante waarde vandaag: "+eur(npv)+" — flink meer dan uw vraagprijs van "+eur(prijs)+", en met een duidelijk begin en einde.")
-      : ("Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. U bent contractueel gegarandeerd minimaal "+eur(afgesproken)+" (vastgelegd via hypotheek/pandrecht), en naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+"."));
+      ? ("Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% totdat u in totaal "+verkoopx+"× ("+eur(drempel3)+") heeft ontvangen — dán stopt de afdracht. U krijgt dus contractueel minimaal "+eur(drempel)+" (vastgelegd via hypotheek/pandrecht) en maximaal "+eur(drempel3)+", naar verwachting bereikt rond jaar "+(verkoopbaar?verkoopbaar:"—")+". Contante waarde vandaag: "+eur(npv)+" — flink meer dan uw vraagprijs van "+eur(prijs)+", en met een duidelijk begin en einde.")
+      : ("Ik betaal u geen vast bedrag, maar "+g("i_f1")+"% van de netto huur totdat u "+omslag+"× de vraagprijs ("+eur(drempel)+") heeft ontvangen, daarna "+g("i_f2")+"% levenslang tot verkoop. U bent contractueel gegarandeerd minimaal "+eur(drempel)+" (vastgelegd via hypotheek/pandrecht), en naar verwachting ontvangt u in totaal "+eur(lifetime)+" (≈"+(lifetime/prijs).toFixed(1)+"× uw vraagprijs), met een contante waarde van "+eur(npv)+" vandaag — veel meer dan de vraagprijs van "+eur(prijs)+"."));
 
     function pctT(v){return (v>=0?"+":"")+v.toFixed(0)+"%";}
     function col(v){return v>=0?"var(--good)":"var(--bad)";}
