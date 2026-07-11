@@ -154,6 +154,22 @@
           <div class="stat good"><div class="l">Totaal rend. op inleg (cash + netto vermogen)</div><div class="v" id="o_totrend">–</div><div class="r">bij verkoopjaar — wat je écht overhoudt</div></div>
         </div>
       </div>
+
+      <div class="card" style="border-color:var(--accent)">
+        <h3>Terugrekenen — welk bod kan de huur dragen?</h3>
+        <div class="disc" style="margin:-4px 0 8px">Niet de vraagprijs bepaalt wat een pand waard is, maar de huur. Hieronder reken ik terug: hoeveel mag je maximaal bieden om binnen X jaar Y× de koopsom te hebben afgelost uit de huur? Bedragen zijn per pand.</div>
+        <div class="r2">
+          <div><label>Doel: afgelost binnen (jaar)</label><input type="number" id="i_doeljaren" value="15" step="1"></div>
+          <div><label>Doel: × de koopsom afgelost</label><input type="number" id="i_doelmult" value="2" step="0.1"></div>
+        </div>
+        <div class="stats" style="margin-top:12px">
+          <div class="stat good"><div class="l">Maximaal bod</div><div class="v" id="o_bod">–</div><div class="r">om je doel te halen</div></div>
+          <div class="stat"><div class="l">Verkoper ontvangt dan</div><div class="v" id="o_bodtot">–</div><div class="r" id="o_bodtotr"></div></div>
+          <div class="stat"><div class="l">Contante waarde daarvan</div><div class="v" id="o_bodnpv">–</div><div class="r">wat het bod vandaag waard is</div></div>
+          <div class="stat"><div class="l">Jouw aankoopkosten</div><div class="v" id="o_bodkosten">–</div><div class="r">ovb + notaris + extra</div></div>
+        </div>
+        <div id="o_bod_verdict" style="margin-top:10px"></div>
+      </div>
     </div>
   </div>
 
@@ -184,7 +200,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
 (function(){
-  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_cap","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_beheer","i_overig","i_vpb","i_disc","i_ovb","i_notaris","i_extra","i_saletax","i_ovb2x","i_verplcap","p_nnum"];
+  var ids=["i_f1","i_f2","i_omslag","i_verkoopx","i_verkoopjaar","i_aftrek","i_cap","i_doeljaren","i_doelmult","i_prijs","i_huur","i_groei","i_service","i_onderhoud","i_leeg","i_beheer","i_overig","i_vpb","i_disc","i_ovb","i_notaris","i_extra","i_saletax","i_ovb2x","i_verplcap","p_nnum"];
   var KEY="revshare_v1";
   function g(id){return parseFloat(document.getElementById(id).value)||0;}
   function eur(n){return "€ "+Math.round(n).toLocaleString("nl-NL");}
@@ -263,6 +279,42 @@
     dual("o_afl",aflNu); dual("o_verm",lastVerm); dual("o_pw",lastPw); dual("o_prijs2",afgesproken);
     var totRend=aankoopkosten>0?((cumCF+lastVerm)/aankoopkosten*100):0;
     s("o_totrend",(totRend>=0?"+":"")+Math.round(totRend)+"%");
+
+    // --- Terugrekenen: welk bod kan de huur dragen? ---
+    var doelJaren=Math.max(1,Math.round(g("i_doeljaren"))), doelMult=g("i_doelmult");
+    function simShare(P,Nj,wantNpv){
+      var dr=omslag*P, capB=verkoopx*P, c=0, npvAcc=0;
+      for(var ya=1;ya<=Nj;ya++){
+        var ia=Math.pow(1+groei,ya-1);
+        var na=huur*ia*(1-leeg)-service*ia-onderhoud*ia/12-beheerPct*huur*ia-overigJaar*ia/12;
+        var ba=Math.max(na,0), sa=0;
+        for(var ma=0;ma<12;ma++){
+          var pa=(capOn&&c>=capB)?0:((c<dr)?f1:f2);
+          var sm2=pa*ba;
+          if(capOn&&c+sm2>capB)sm2=Math.max(0,capB-c);
+          c+=sm2; sa+=sm2;
+        }
+        npvAcc+=sa/Math.pow(1+disc,ya);
+      }
+      return wantNpv? npvAcc : c;
+    }
+    var bodMax=0;
+    if(doelMult>0){
+      var lo2=1, hi2=1e8;
+      for(var kk=0;kk<80;kk++){var mid2=(lo2+hi2)/2; if(simShare(mid2,doelJaren,false)>=doelMult*mid2) lo2=mid2; else hi2=mid2;}
+      bodMax=lo2;
+    }
+    var bodTot=doelMult*bodMax;
+    var bodNpv=simShare(bodMax,doelJaren,true);
+    var bodKosten=ovbP*(ovb2x?verkoopx*bodMax:bodMax)+notaris+extra;
+    s("o_bod",eur(bodMax));
+    s("o_bodtot",eur(bodTot)); s("o_bodtotr",doelMult+"× de koopsom, binnen "+doelJaren+" jaar");
+    s("o_bodnpv",eur(bodNpv));
+    s("o_bodkosten",eur(bodKosten));
+    var bv=document.getElementById("o_bod_verdict");
+    if(bodMax<=1){bv.innerHTML='<span class="badge" style="background:var(--badbg);color:var(--bad)">Bij deze huur en kosten is er geen bod mogelijk dat je doel haalt.</span>';}
+    else if(prijs<=bodMax){bv.innerHTML='<span class="badge" style="background:var(--goodbg);color:var(--good)">Je vraagprijs van '+eur(prijs)+' past ✓ — je hebt nog '+eur(bodMax-prijs)+' ruimte.</span>';}
+    else{bv.innerHTML='<span class="badge" style="background:var(--badbg);color:var(--bad)">Vraagprijs '+eur(prijs)+' is te hoog. Bied maximaal '+eur(bodMax)+' — dat is '+eur(prijs-bodMax)+' lager.</span>';}
     var vs=document.getElementById("o_verm_stat"); vs.classList.toggle("good",lastVerm>=0); vs.classList.toggle("bad",lastVerm<0);
 
     s("o_bodzin", capOn
